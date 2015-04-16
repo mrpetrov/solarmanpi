@@ -1,22 +1,22 @@
 /*
-    * solard.c
-    *
-    * Raspberry Pi solar manager which uses 1wire and GPIO.
-    * Plamen Petrov <plamen.sisi@gmail.com>
-    *
-    * solard is Plamens's custom solar controller, based on the Raspberry Pi 2.
-    * Data is gathered and logged every 10 seconds from 4 DS18B20 waterproof sensors,
-    * controled are 4 relays via GPIO, and a GPIO pin is read for managing the power
-    * to Grundfoss UPS2 pumps, which if left alone block on power switch to battery.
-    * Remedy is to leave the pumps off for a couple of seconds on power failure (the
-    * UPS switches to battery fine), and then turn the pump back on. Log data is in
-    * CSV format, to be picked up by some sort of data collection/graphing tool, like
-    * collectd or similar.
-    * The daemon is controlled via its configuration file, which if need be - can
-    * be requested to be re-read while running. This is done by sending SIGUSR1
-    * signal to the daemon process. The event is noted in the log file.
-    * The logfile itself can be "grep"-ed for "ALARM" to catch and notify of
-    * notable events, recorded by the daemon.
+* solard.c
+*
+* Raspberry Pi solar manager which uses 1wire and GPIO.
+* Plamen Petrov <plamen.sisi@gmail.com>
+*
+* solard is Plamens's custom solar controller, based on the Raspberry Pi 2.
+* Data is gathered and logged every 10 seconds from 4 DS18B20 waterproof sensors,
+* controled are 4 relays via GPIO, and a GPIO pin is read for managing the power
+* to Grundfoss UPS2 pumps, which if left alone block on power switch to battery.
+* Remedy is to leave the pumps off for a couple of seconds on power failure (the
+* UPS switches to battery fine), and then turn the pump back on. Log data is in
+* CSV format, to be picked up by some sort of data collection/graphing tool, like
+* collectd or similar.
+* The daemon is controlled via its configuration file, which if need be - can
+* be requested to be re-read while running. This is done by sending SIGUSR1
+* signal to the daemon process. The event is noted in the log file.
+* The logfile itself can be "grep"-ed for "ALARM" to catch and notify of
+* notable events, recorded by the daemon.
 */
 
 /* example for /etc/solard.cfg config file (these are the DEFAULTS):
@@ -38,7 +38,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "1.3 2015-03-17"
+#define SOLARDVERSION    "1.4 2015-03-17"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -92,7 +92,7 @@ char *sensor_paths[] = { SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
 
 /* var to keep track of read errors, so if a threshold is reached - the
 program can safely shut down everything, send notification and bail out */
-unsigned int sensor_read_errors = 0;
+unsigned int sensor_read_errors = (11*TOTALSENSORS);
 
 /* current sensors temperatures - e.g. values from last read */
 float sensors[5] = { 0, 0, 0, 0, 0 };
@@ -135,24 +135,26 @@ short need_to_read_cfg = 0;
 
 unsigned short current_timer_hour = 0;
 
-/*
-    Example output of a sensor file:
-
-    pi@raspberrypi ~ $ time cat /sys/bus/w1/devices/28-041464764cff/w1_slave
-    84 01 55 00 3f ff 3f 10 d7 : crc=d7 YES
-    84 01 55 00 3f ff 3f 10 d7 t=24250
-
-    real    0m0.834s
-    user    0m0.000s
-    sys     0m0.050s
-*/
-
 /* FORWARD DECLARATIONS so functions can be used in preceeding ones */
 
 int
 DisableGPIOpins();
 
 /* end of forward-declared functions */
+
+void
+SetDefaultCfg() {
+    strcpy( solard_cfg.mode_str, "1");
+    solard_cfg.mode = 1;
+    strcpy( solard_cfg.wanted_T_str, "50");
+    solard_cfg.wanted_T = 50;
+    strcpy( solard_cfg.use_electric_start_hour_str, "4");
+    solard_cfg.use_electric_start_hour = 4;
+    strcpy( solard_cfg.use_electric_stop_hour_str, "5");
+    solard_cfg.use_electric_stop_hour = 5;
+    strcpy( solard_cfg.keep_pump1_on_str, "1");
+    solard_cfg.keep_pump1_on = 1;
+}
 
 static void
 log_message(char *filename, char *message)
@@ -378,6 +380,18 @@ GPIOWrite(int pin, int value)
     return(0);
 }
 
+/*
+    Example output of a sensor file:
+
+    pi@raspberrypi ~ $ time cat /sys/bus/w1/devices/28-041464764cff/w1_slave
+    84 01 55 00 3f ff 3f 10 d7 : crc=d7 YES
+    84 01 55 00 3f ff 3f 10 d7 t=24250
+
+    real    0m0.834s
+    user    0m0.000s
+    sys     0m0.050s
+*/
+
 static float
 sensorRead(const char* sensor)
 {
@@ -436,15 +450,15 @@ signal_handler(int sig)
         need_to_read_cfg = 1;
         break;
         case SIGUSR2:
-        log_message(LOG_FILE, " Signal SIGUSR2 caught.");
+        log_message(LOG_FILE, " Signal SIGUSR2 caught. Not implemented. Continuing.");
         break;
         case SIGHUP:
-        log_message(LOG_FILE, " Signal SIGHUP caught.");
+        log_message(LOG_FILE, " Signal SIGHUP caught. Not implemented. Continuing.");
         break;
         case SIGTERM:
-        log_message(LOG_FILE, " Terminate signal caught.");
+        log_message(LOG_FILE, " Terminate signal caught. Stopping.");
         if ( ! DisableGPIOpins() ) { log_message(LOG_FILE, " Cannot disable GPIO! Quitting."); exit(4); }
-        log_message(LOG_FILE," Exitting normally.");
+        log_message(LOG_FILE," Exitting normally. Bye, bye!");
         exit(0);
         break;
     }
@@ -526,14 +540,18 @@ ReadSensors() {
         if ( new_val != -200 ) {
             sensors[i+1] = new_val;
             if (sensor_read_errors) sensor_read_errors--;
-            } else {
+        }
+        else {
             sensor_read_errors++;
         }
     }
     if (sensor_read_errors>(12*TOTALSENSORS)){
         /* log the errors, clean up and bail out */
-        if ( ! DisableGPIOpins() ) { log_message(LOG_FILE, " Cannot disable GPIO on shutdown."); exit(5); }
-        log_message(LOG_FILE, " ALARM Too many sensor read errors. Check system! Stopping.");
+        if ( ! DisableGPIOpins() ) {
+            log_message(LOG_FILE, " ALARM Too many sensor errors! GPIO disable failed.");
+            exit(5);
+        }
+        log_message(LOG_FILE, " ALARM Too many sensor read errors! Stopping.");
         exit(10);
     }
 }
@@ -549,10 +567,10 @@ ReadExternalPower() {
 /* Return non-zero value on critical condition found based on current data in sensors[] */
 int
 CriticalTempsFound() {
-    if (Tkotel >= 80) return 1;
+    if (Tkotel >= 85) return 1;
     if (Tkolektor >= 100) return 2;
-    if (Tkolektor <= 5) return 3;
-    if (TboilerHigh >= 88) return 4;
+    if (TboilerHigh >= 85) return 3;
+    if (Tkolektor <= 4) return -1;
     return 0;
 }
 
@@ -566,7 +584,7 @@ ControlStateToGPIO() {
     GPIOWrite( HEAT,  CHeater );
 }
 
-/* Function get current time and put the hour in current_timer_hour */
+/* Function to get current time and put the hour in current_timer_hour */
 void
 GetCurrentTime() {
     static char buff[5];
@@ -599,6 +617,35 @@ BoilerHeatingNeeded() {
     else return 0;
 }
 
+static void
+LogData() {
+    char msg[100];
+    /* Log data like so:
+        Time(by log function),UNIXTIME,TKOTEL,TSOLAR,TBOILERH,TBOILERL,
+    PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY,BOILERTEMPWANTED */
+    sprintf( msg, ",%lu,%3.3f,%3.3f,%3.3f,%3.3f,%d,%d,%d,%d,%d,%d",\
+    (unsigned long)time(NULL), Tkotel, Tkolektor, TboilerHigh, TboilerLow,\
+    CPump1, CPump2, CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T );
+    log_message(DATA_FILE, msg);
+}
+
+void
+RequestElectricHeat() {
+    /* Do the check with config to see if its OK to use electric heater,
+    for example: if its on "night tariff" - switch it on */
+    if ( solard_cfg.use_electric_start_hour > solard_cfg.use_electric_stop_hour ) {
+        /* heater allowed like from 23:00(23) to 05:00(4) - so use OR */
+        if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) ||
+        (current_timer_hour < solard_cfg.use_electric_stop_hour) )
+        CHeater = 1;
+        } else {
+        /* heater allowed like from 05:00(5) to 07:00(6) - so use OR */
+        if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) &&
+        (current_timer_hour < solard_cfg.use_electric_stop_hour) )
+        CHeater = 1;
+    }
+}
+
 int
 SelectHeatingMode() {
     int ModeSelected;
@@ -623,34 +670,16 @@ SelectHeatingMode() {
             ModeSelected = 4;
         }
     }
-
     return ModeSelected;
 }
 
 void
-RequestElectricHeat() {
-    /* Do the check with config to see if its OK to use electric heater,
-    for example: if its on "night tariff" - switch it on */
-    if ( solard_cfg.use_electric_start_hour > solard_cfg.use_electric_stop_hour ) {
-        /* heater allowed like from 23:00(23) to 05:00(4) - so use OR */
-        if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) ||
-        (current_timer_hour < solard_cfg.use_electric_stop_hour) )
-        CHeater = 1;
-        } else {
-        /* heater allowed like from 05:00(5) to 07:00(6) - so use OR */
-        if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) &&
-        (current_timer_hour < solard_cfg.use_electric_stop_hour) )
-        CHeater = 1;
-    }
-}
-
-void
 ActivateHeatingMode(const int HeatMode) {
-    int current_state = 0;
-    int new_state = 0;
+    char current_state = 0;
+    char new_state = 0;
 
     /* calculate current state */
-    if ( CPump1 ) current_state += 8;
+    if ( CPump1 ) current_state = 8;
     if ( CPump2 ) current_state += 4;
     if ( CValve ) current_state += 2;
     if ( CHeater ) current_state += 1;
@@ -663,9 +692,6 @@ ActivateHeatingMode(const int HeatMode) {
     switch(HeatMode) {
         case 0: /* Manual mode for ALL OFF */
         CPump1  = 0;
-        CPump2  = 0;
-        CValve  = 0;
-        CHeater = 0;
         break;
         default:
         case 1: /* Idle - turn everything off (except furnace pump maybe);
@@ -676,7 +702,8 @@ ActivateHeatingMode(const int HeatMode) {
         CPump2  = 1;
         break;
         case 3: /* Furnace heating
-        Open valve, so heat gets into boiler */
+        Open valve and turn pump ON, so heat gets into boiler */
+        CPump1  = 1;
         CValve  = 1;
         break;
         case 4: /* Fall back to electrical heater
@@ -689,19 +716,15 @@ ActivateHeatingMode(const int HeatMode) {
             so when the next period's decision is made - there will be a change
         of state, and the pump will have started (if needs to be ON) */
         CPump1  = 0;
-        CPump2  = 0;
         if ( (current_state & 1) == 1 ) { CHeater = 1; }
         break;
-        case 12: /* Manual mode for furnace pump on + electrical heating
-            Used to turn the system to manual mode: the furnace pump is kept on
-            and the electrical heater of the water tank is powered, depending on
-        its thermostat to control when to use the power */
-        CPump1  = 1;
+        case 12: /* Manual mode for electrical heating
+        Force the electrical heater ON and respect pumps other settings */
         CHeater = 1;
         break;
     }
     /* calculate desired new state */
-    if ( CPump1 ) new_state += 8;
+    if ( CPump1 ) new_state = 8;
     if ( CPump2 ) new_state += 4;
     if ( CValve ) new_state += 2;
     if ( CHeater ) new_state += 1;
@@ -712,18 +735,6 @@ ActivateHeatingMode(const int HeatMode) {
     }
 }
 
-static void
-LogData() {
-    char msg[100];
-    /* Log data like so:
-        Time(by log function),UNIXTIME,TKOTEL,TSOLAR,TBOILERH,TBOILERL,
-    PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY,BOILERTEMPWANTED */
-    sprintf( msg, ",%lu,%3.3f,%3.3f,%3.3f,%3.3f,%d,%d,%d,%d,%d,%d",\
-    (unsigned long)time(NULL), Tkotel, Tkolektor, TboilerHigh, TboilerLow,\
-    CPump1, CPump2, CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T );
-    log_message(DATA_FILE, msg);
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -732,16 +743,8 @@ main(int argc, char *argv[])
     short int AlarmRaised = 0;
     int HeatingMode = 0;
     struct timeval tvalBefore, tvalAfter;
-    strcpy( solard_cfg.mode_str, "1");
-    solard_cfg.mode = 1;
-    strcpy( solard_cfg.wanted_T_str, "50");
-    solard_cfg.wanted_T = 50;
-    strcpy( solard_cfg.use_electric_start_hour_str, "4");
-    solard_cfg.use_electric_start_hour = 4;
-    strcpy( solard_cfg.use_electric_stop_hour_str, "5");
-    solard_cfg.use_electric_stop_hour = 5;
-    strcpy( solard_cfg.keep_pump1_on_str, "1");
-    solard_cfg.keep_pump1_on = 1;
+
+    SetDefaultCfg();
 
     daemonize();
 
@@ -785,14 +788,14 @@ main(int argc, char *argv[])
             if ( CriticalTempsFound() ) {
                 ActivateEmergencyHeatTransfer();
                 if ( !AlarmRaised ) {
-                log_message(LOG_FILE," ALARM: Activating emergency cooling!");
-                AlarmRaised = 1;
+                    log_message(LOG_FILE," ALARM: Activating emergency cooling!");
+                    AlarmRaised = 1;
                 }
             }
             else {
                 if ( AlarmRaised ) {
-                log_message(LOG_FILE," Critical condition resolved. Running normally.");
-                AlarmRaised = 0;
+                    log_message(LOG_FILE," Critical condition resolved. Running normally.");
+                    AlarmRaised = 0;
                 }
                 if (BoilerHeatingNeeded()) {
                     HeatingMode = SelectHeatingMode();
@@ -811,7 +814,7 @@ main(int argc, char *argv[])
                 ActivateHeatingMode(HeatingMode);
             }
             break;
-            case 2: /* manual regular mode - furnace pump and heater power are ON */
+            case 2: /* manual mode - heater power is ON */
             HeatingMode = 12;
             /* But still manage pumps in case of power failure */
             if ( CPowerByBattery != CPrevPowerByBattery ) {
