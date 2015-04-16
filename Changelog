@@ -1,4 +1,17 @@
-1.7
+1.8 2015-04-11
+Fixed some typos. Added _Prev vars for temperature sensor readings and the
+controls[] array. The controls[] array also got a new ctrlstatecycles[5]
+array which will count the 10 second cycles spent in the last state; zeroed
+upon change of state. Added sensible init values to said arrays.
+Tweaked ReadSensors() to log a warning when it hits trouble, and to
+deal nicely with too wild changes to sensor data, i.e. it now makes
+changes no bigger than 3 degrees C, and logs when it corrects data. It only
+takes raw data in upon startup - there is a var just_started to allow this.
+Changed the format of the data in solar_data.csv - now its easier to read,
+and it also contains the used HeatingMode/IdleMode.
+Critical temps changes: max boiler t=77, max solar temp=90
+
+1.7 2015-04-10
 Don't bother turning the solar pump on for now - it is absent anyway.
 New config mode introduced:
 mode=3
