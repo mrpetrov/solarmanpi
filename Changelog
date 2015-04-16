@@ -1,1 +1,13 @@
+1.7
+Don't bother turning the solar pump on for now - it is absent anyway.
+New config mode introduced:
+mode=3
+forces only furnace pump ON.
+Changed temp diff requirements: solar comes on if at least 8 degrees C hotter,
+was 5 C; furnace now needs 5 C more than boiler, was 3 C. And all boiler
+comparisons now use the hotter sensor, which sadly is placed too low, but for
+now will have to do.
+So, currently the system practically controls boiler valve opening and logs
+the temps.
+
 EOF
