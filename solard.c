@@ -38,7 +38,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "1.4 2015-03-17"
+#define SOLARDVERSION    "1.5 2015-03-18"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -57,6 +57,7 @@
 #define LOCK_FILE       "/run/solard.pid"
 #define LOG_FILE        "/var/log/solard.log"
 #define DATA_FILE       "/run/shm/solard_data.csv"
+#define TABLE_FILE      "/run/shm/solard_current"
 #define CONFIG_FILE     "/etc/solard.cfg"
 
 #define BUFFER_MAX 3
@@ -157,8 +158,7 @@ SetDefaultCfg() {
 }
 
 static void
-log_message(char *filename, char *message)
-{
+log_message(char *filename, char *message) {
     FILE *logfile;
     char msg[100];
     char buff[70];
@@ -170,6 +170,25 @@ log_message(char *filename, char *message)
     strftime( buff, sizeof buff, "%F %T", t_struct );
     sprintf( msg, "%s%s", buff, message );
     logfile = fopen( filename, "a" );
+    if ( ! logfile ) return;
+    fprintf( logfile, "%s\n", msg );
+    fclose( logfile );
+}
+
+/* this version of the logging function destroys the opened file contents */
+static void
+log_msg_ovr(char *filename, char *message) {
+    FILE *logfile;
+    char msg[100];
+    char buff[70];
+    time_t t;
+    struct tm *t_struct;
+
+    t = time(NULL);
+    t_struct = localtime( &t );
+    strftime( buff, sizeof buff, "%F %T", t_struct );
+    sprintf( msg, "%s%s", buff, message );
+    logfile = fopen( filename, "w" );
     if ( ! logfile ) return;
     fprintf( logfile, "%s\n", msg );
     fclose( logfile );
@@ -627,6 +646,27 @@ LogData() {
     (unsigned long)time(NULL), Tkotel, Tkolektor, TboilerHigh, TboilerLow,\
     CPump1, CPump2, CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T );
     log_message(DATA_FILE, msg);
+
+    sprintf( msg, ",Temp1,%3.3f", Tkotel );
+    log_msg_ovr(TABLE_FILE, msg);
+    sprintf( msg, ",Temp2,%3.3f", Tkolektor );
+    log_message(TABLE_FILE, msg);
+    sprintf( msg, ",Temp3,%3.3f", TboilerHigh );
+    log_message(TABLE_FILE, msg);
+    sprintf( msg, ",Temp4,%3.3f", TboilerLow );
+    log_message(TABLE_FILE, msg);
+    sprintf( msg, ",Pump1,%d", CPump1 );
+    log_message(TABLE_FILE, msg);
+    sprintf( msg, ",Pump2,%d", CPump2 );
+    log_message(TABLE_FILE, msg);
+    sprintf( msg, ",Valve,%d", CValve );
+    log_message(TABLE_FILE, msg);
+    sprintf( msg, ",Heater,%d", CHeater );
+    log_message(TABLE_FILE, msg);
+    sprintf( msg, ",PoweredByBattery,%d", CPowerByBattery );
+    log_message(TABLE_FILE, msg);
+    sprintf( msg, ",TempWanted,%d", solard_cfg.wanted_T );
+    log_message(TABLE_FILE, msg);
 }
 
 void
@@ -848,4 +888,3 @@ main(int argc, char *argv[])
 }
 
 /* EOF */
-
