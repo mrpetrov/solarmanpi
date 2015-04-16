@@ -24,7 +24,7 @@
     # version 1.0
     # $date-id
 
-    # mode: 0=ALL OFF; 1=AUTO; 2=MANAUL PUMP1+HEATER;
+    # mode: 0=ALL OFF; 1=AUTO; 2=MANAUL PUMP1+HEATER; 3=MANUAL PUMP1 ONLY;
     mode=1
 
     # wanted_T: the desired temperature of water in tank
@@ -38,7 +38,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "1.6 2015-03-20"
+#define SOLARDVERSION    "1.7 2015-04-10"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -598,7 +598,9 @@ void
 ControlStateToGPIO() {
     /* put state on GPIO pins */
     GPIOWrite( PUMP1, CPump1 );
+    /* Do not physically change PUMP2 state - currently it is absent, so just log it
     GPIOWrite( PUMP2, CPump2 );
+    */
     GPIOWrite( VALVE, CValve );
     GPIOWrite( HEAT,  CHeater );
 }
@@ -631,8 +633,10 @@ ActivateEmergencyHeatTransfer() {
 
 int
 BoilerHeatingNeeded() {
-    /* Calculate boiler temp as intermediary between the boiler's hot and cold ends */
-    if ( ((TboilerLow + TboilerHigh) / 2) <= ((float) solard_cfg.wanted_T) ) return 1;
+    /* Calculate boiler temp as intermediary between the boiler hot and cold ends */
+    /* if ( ((TboilerLow + TboilerHigh) / 2) <= ((float) solard_cfg.wanted_T) ) return 1; */
+    /* Check just the higher temp sensor to determine if boiler needs heating */
+    if ( TboilerHigh <= (float) solard_cfg.wanted_T ) return 1;
     else return 0;
 }
 
@@ -679,7 +683,7 @@ RequestElectricHeat() {
         (current_timer_hour < solard_cfg.use_electric_stop_hour) )
         CHeater = 1;
         } else {
-        /* heater allowed like from 05:00(5) to 07:00(6) - so use OR */
+        /* heater allowed like from 05:00(5) to 07:00(6) - so use AND */
         if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) &&
         (current_timer_hour < solard_cfg.use_electric_stop_hour) )
         CHeater = 1;
@@ -697,12 +701,12 @@ SelectHeatingMode() {
         4 - electrical heating
     Initialize for idling */
     ModeSelected = 1;
-    if ((Tkolektor > (TboilerLow + 4.8))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, solar out temp must be at least 5 degrees higher than the boiler at its cold end */
+    if ((Tkolektor > (TboilerHigh + 8.0))&&(Tkolektor > Tkotel)) {
+        /* To enable solar heating, solar out temp must be at least 8 degrees higher than the boiler at its cold end */
         ModeSelected = 2;
         } else {
         /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerLow + 3.8)) {
+        if (Tkotel > (TboilerHigh + 5.0)) {
             /* The furnace is hot enough - use it */
             ModeSelected = 3;
             } else {
@@ -751,9 +755,9 @@ ActivateHeatingMode(const int HeatMode) {
         RequestElectricHeat();
         break;
         case 11: /* Force all pumps off, keeping heater state
-            Used to deal with Grundfoss UPS2 pumps blocking on switch to battery power
-            This forces the pumps OFF for one logging period (10 seconds),
-            so when the next period's decision is made - there will be a change
+        Used to deal with Grundfoss UPS2 pumps blocking on switch to battery power
+        This forces the pumps OFF for one logging period (10 seconds),
+        so when the next period's decision is made - there will be a change
         of state, and the pump will have started (if needs to be ON) */
         CPump1  = 0;
         if ( (current_state & 1) == 1 ) { CHeater = 1; }
@@ -761,6 +765,9 @@ ActivateHeatingMode(const int HeatMode) {
         case 12: /* Manual mode for electrical heating
         Force the electrical heater ON and respect pumps other settings */
         CHeater = 1;
+        break;
+        case 13: /* Manual mode for ONLY FURNACE PUMP ON */
+        CPump1  = 1;
         break;
     }
     /* calculate desired new state */
@@ -860,6 +867,22 @@ main(int argc, char *argv[])
             break;
             case 2: /* manual mode - heater power is ON */
             HeatingMode = 12;
+            /* But still manage pumps in case of power failure */
+            if ( CPowerByBattery != CPrevPowerByBattery ) {
+                /* If we just switched to battery.. */
+                if ( CPowerByBattery ) {
+                    /* ..use mode 11 - forces all pumps OFF, keeps heater state */
+                    HeatingMode = 11;
+                    log_message(LOG_FILE," WARNING Switch to BATTERY POWER detected.");
+                }
+                else {
+                    log_message(LOG_FILE," WARNING Powered by GRID now.");
+                }
+            }
+            ActivateHeatingMode(HeatingMode);
+            break;
+            case 3: /* manual mode - ONLY FURNACE PUMP ON */
+            HeatingMode = 13;
             /* But still manage pumps in case of power failure */
             if ( CPowerByBattery != CPrevPowerByBattery ) {
                 /* If we just switched to battery.. */
