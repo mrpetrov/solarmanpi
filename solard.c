@@ -38,7 +38,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "1.5 2015-03-18"
+#define SOLARDVERSION    "1.6 2015-03-20"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -849,6 +849,10 @@ main(int argc, char *argv[])
                     if ( CPowerByBattery ) {
                         /* ..use mode 11 - forcefully turn off all pumps */
                         HeatingMode = 11;
+                        log_message(LOG_FILE," WARNING Switch to BATTERY POWER detected.");
+                    }
+                    else {
+                        log_message(LOG_FILE," WARNING Powered by GRID now.");
                     }
                 }
                 ActivateHeatingMode(HeatingMode);
@@ -862,6 +866,10 @@ main(int argc, char *argv[])
                 if ( CPowerByBattery ) {
                     /* ..use mode 11 - forces all pumps OFF, keeps heater state */
                     HeatingMode = 11;
+                    log_message(LOG_FILE," WARNING Switch to BATTERY POWER detected.");
+                }
+                else {
+                    log_message(LOG_FILE," WARNING Powered by GRID now.");
                 }
             }
             ActivateHeatingMode(HeatingMode);
@@ -888,3 +896,4 @@ main(int argc, char *argv[])
 }
 
 /* EOF */
+
