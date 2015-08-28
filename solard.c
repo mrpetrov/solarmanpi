@@ -24,7 +24,7 @@
     # version 1.0
     # $date-id
 
-    # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
+    # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY; 
     # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANAUL PUMP1+HEATER
     mode=1
 
@@ -39,7 +39,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "2.9 2015-04-24"
+#define SOLARDVERSION    "3.0 2015-04-26"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -144,6 +144,17 @@ float NightlyPowerUsed;
 /* my boiler uses 3kW per hour, so this is 0,00834 kWh per 10 seconds */
 /* this in Wh per 10 seconds is 8.34 W */
 
+/* NightEnergy (NE) start and end hours variables - get recalculated every days */
+unsigned short NEstart = 22;
+unsigned short NEstop  = 5;
+
+/* Nubmer of cycles (circa 10 seconds each) that the program has run */
+unsigned long ProgramRunCycles  = 0;
+
+/* timers - current hour and month vars - used in keeping things up to date */
+unsigned short current_timer_hour = 0;
+unsigned short current_month = 0;
+
 struct structsolard_cfg
 {
     char    mode_str[MAXLEN];
@@ -162,8 +173,6 @@ structsolard_cfg;
 struct structsolard_cfg solard_cfg;
 
 short need_to_read_cfg = 0;
-
-unsigned short current_timer_hour = 0;
 
 short just_started = 0;
 
@@ -508,9 +517,9 @@ signal_handler(int sig)
         case SIGTERM:
         log_message(LOG_FILE, " INFO: Terminate signal caught. Stopping.");
         if ( ! DisableGPIOpins() ) {
-                        log_message(LOG_FILE, " WARNING: Errors disabling GPIO! Quitting anyway.");
-                        exit(4);
-                }
+			log_message(LOG_FILE, " WARNING: Errors disabling GPIO! Quitting anyway.");
+			exit(4);
+		}
         log_message(LOG_FILE," Exiting normally. Bye, bye!");
         exit(0);
         break;
@@ -659,7 +668,7 @@ ControlStateToGPIO() {
 void
 write_log_start() {
     char start_log_text[80];
-
+    
     log_message(LOG_FILE," INFO: solard "SOLARDVERSION" now starting up...");
     log_message(LOG_FILE," Running in "RUNNING_DIR", config file "CONFIG_FILE );
     log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
@@ -681,6 +690,25 @@ GetCurrentTime() {
     strftime( buff, sizeof buff, "%H", t_struct );
 
     current_timer_hour = atoi( buff );
+
+    /* adjust night tariff start and stop hours at program start and 
+       every day sometime between 8:00 and 9:00 */
+    if ( ( just_started ) || 
+         ((current_timer_hour == 8) && ((ProgramRunCycles % 6*60) == 0)) ) { 
+        strftime( buff, sizeof buff, "%m", t_struct );
+        current_month = atoi( buff );
+        if ((current_month >= 4)&&(current_month <= 10)) {
+            /* April through October - use NE from 23:00 till 6:59 */
+            NEstart = 23;
+            NEstop  = 6;
+        }
+        else {
+            /* November through March - use NE from 22:00 till 5:59 */
+            NEstart = 22;
+            NEstop  = 5;
+        }    
+        log_message(LOG_FILE," INFO: adjusted night energy start and stop hours.");
+    }
 }
 
 short
@@ -715,9 +743,9 @@ LogData(short HM) {
 short
 SelectIdleMode() {
     short ModeSelected = 0;
-        short wantP1on = 0;
-        short wantP2on = 0;
-        short wantVon = 0;
+	short wantP1on = 0;
+	short wantP2on = 0;
+	short wantVon = 0;
     /* If furnace is cold - turn pump on to keep it from freezing */
     if (Tkotel < 8.9) wantP1on = 1;
     /* If solar is cold - turn pump on to keep it from freezing */
@@ -736,7 +764,7 @@ SelectIdleMode() {
     if ((Tkolektor > 40)&&(Tkolektor > (TkolektorPrev+0.24))) wantP2on = 1;
     /* If solar is 10 C hotter than furnace and we want to heat the house
     - turn both pumps on and open the valve */
-        if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
+	if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
     ((Tkolektor > (Tkotel+9.9))&&(Tkolektor > TkolektorPrev)) ) {
         wantP1on = 1;
         wantP2on = 1;
@@ -749,32 +777,32 @@ SelectIdleMode() {
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
     }
-        /* Try to keep Grundfoss UPS2 pump dandy - turn it on every 4 hours */
+	/* Try to keep Grundfoss UPS2 pump dandy - turn it on every 4 hours */
     if ( (!CPump1) && (SCPump1 > 4*60*6) ) wantP1on = 1;
-        /* If solar pump has been off for 4 hours during day time - turn it on for a while,
-        to circulate fluid */
+	/* If solar pump has been off for 4 hours during day time - turn it on for a while,
+	to circulate fluid */
     if ( (!CPump2) && (SCPump2 > 4*60*6) && (current_timer_hour >= 5) ) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
 
-        if ( wantP1on ) ModeSelected |= 1;
-        if ( wantP2on ) ModeSelected |= 2;
-        if ( wantVon )  ModeSelected |= 4;
+	if ( wantP1on ) ModeSelected |= 1;
+	if ( wantP2on ) ModeSelected |= 2;
+	if ( wantVon )  ModeSelected |= 4;
     return ModeSelected;
 }
 
 short
 SelectHeatingMode() {
     short ModeSelected = 0;
-        short wantP1on = 0;
-        short wantP2on = 0;
-        short wantVon = 0;
-        short wantHon = 0;
+	short wantP1on = 0;
+	short wantP2on = 0;
+	short wantVon = 0;
+	short wantHon = 0;
 
     /* First get what the idle routine would do: */
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-        if ((Tkolektor > (TboilerHigh + 7.9))&&(Tkolektor > Tkotel)) {
+	if ((Tkolektor > (TboilerHigh + 7.9))&&(Tkolektor > Tkotel)) {
         /* To enable solar heating, solar out temp must be at least 5 C higher than the boiler */
         wantP2on = 1;
     }
@@ -786,7 +814,7 @@ SelectHeatingMode() {
             /* And if valve has been open for 2 minutes - turn furnace pump on */
             if (CValve &&(SCValve > 13)) wantP1on = 1;
         }
-                else {
+		else {
             /* All is cold - use electric heater if possible */
             /* FIXME For now - only turn heater on if valve is fully closed,
                 because it runs with at least one pump */
@@ -794,10 +822,10 @@ SelectHeatingMode() {
         }
     }
 
-        if ( wantP1on ) ModeSelected |= 1;
-        if ( wantP2on ) ModeSelected |= 2;
-        if ( wantVon )  ModeSelected |= 4;
-        if ( wantHon )  ModeSelected |= 8;
+	if ( wantP1on ) ModeSelected |= 1;
+	if ( wantP2on ) ModeSelected |= 2;
+	if ( wantVon )  ModeSelected |= 4;
+	if ( wantHon )  ModeSelected |= 8;
     return ModeSelected;
 }
 
@@ -863,22 +891,22 @@ ActivateHeatingMode(const short HeatMode) {
     /* Calculate total and night tariff electrical power used here: */
     if ( CHeater ) {
         TotalPowerUsed += HEATERPPC;
-        if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += HEATERPPC; }
+        if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += HEATERPPC; }
     }
     if ( CPump1 ) {
         TotalPowerUsed += PUMPPPC;
-        if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += PUMPPPC; }
+        if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += PUMPPPC; }
     }
     if ( CPump2 ) {
         TotalPowerUsed += PUMPPPC;
-        if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += PUMPPPC; }
+        if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += PUMPPPC; }
     }
     if ( CValve ) {
         TotalPowerUsed += VALVEPPC;
-        if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += VALVEPPC; }
+        if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += VALVEPPC; }
     }
     TotalPowerUsed += SELFPPC;
-    if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += SELFPPC; }
+    if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += SELFPPC; }
 
     /* calculate desired new state */
     if ( CPump1 ) new_state |= 1;
@@ -944,8 +972,8 @@ main(int argc, char *argv[])
     do {
         /* Do all the important stuff... */
         if ( gettimeofday( &tvalBefore, NULL ) ) {
-                        log_message(LOG_FILE," WARNING: error getting tvalBefore...");
-                }
+			log_message(LOG_FILE," WARNING: error getting tvalBefore...");
+		}
         /* get the current hour every 5 minutes for electric heater schedule */
         if ( iter == 30 ) {
             iter = 0;
@@ -964,8 +992,8 @@ main(int argc, char *argv[])
             case 2: /* 2=AUTO+HEAT HOUSE BY SOLAR - mode taken into account by SelectIdle() */
             if ( CriticalTempsFound() ) {
                 /* ActivateEmergencyHeatTransfer(); */
-                                /* Set HeatingMode bits for both pumps and valve */
-                                HeatingMode = 7;
+				/* Set HeatingMode bits for both pumps and valve */
+				HeatingMode = 7;
                 if ( !AlarmRaised ) {
                     log_message(LOG_FILE," ALARM: Activating emergency cooling!");
                     AlarmRaised = 1;
@@ -1001,19 +1029,20 @@ main(int argc, char *argv[])
         AdjustHeatingModeForBatteryPower(HeatingMode);
         ActivateHeatingMode(HeatingMode);
         LogData(HeatingMode);
+        ProgramRunCycles++;
         if ( need_to_read_cfg ) {
             need_to_read_cfg = 0;
             parse_config();
         }
         if ( just_started ) { just_started = 0; }
         if ( gettimeofday( &tvalAfter, NULL ) ) {
-                        log_message(LOG_FILE," WARNING: error getting tvalAfter...");
-                        sleep( 5 );
-                } else {
+			log_message(LOG_FILE," WARNING: error getting tvalAfter...");
+			sleep( 5 );
+		} else {
         /* ..and sleep for rest of the 10 seconds wait period */
         usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
         + tvalAfter.tv_usec) - tvalBefore.tv_usec));
-            }
+	    }
     } while (1);
 
     /* Disable GPIO pins */
