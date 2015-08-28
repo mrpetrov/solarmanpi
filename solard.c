@@ -806,9 +806,9 @@ SelectIdleMode() {
     }
     /* Try to keep Grundfoss UPS2 pump dandy - turn it on every 4 hours */
     if ( (!CPump1) && (SCPump1 > (6*60*4)) ) wantP1on = 1;
-    /* If solar pump has been off for 4 hours during day time - turn it on for a while,
+    /* If solar pump has been off for 20 minutes during day time - turn it on for a while,
     to circulate fluid */
-    if ( (!CPump2) && (SCPump2 > (6*60*4)) && (current_timer_hour >= 5) ) wantP2on = 1;
+    if ( (!CPump2) && (SCPump2 > (6*20)) && (current_timer_hour >= 5) ) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
 
     if ( wantP1on ) ModeSelected |= 1;
