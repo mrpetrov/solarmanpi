@@ -24,7 +24,7 @@
     # version 1.0
     # $date-id
 
-    # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY; 
+    # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
     # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANAUL PUMP1+HEATER
     mode=1
 
@@ -39,7 +39,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "2.8 2015-04-23"
+#define SOLARDVERSION    "2.9 2015-04-24"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -250,10 +250,10 @@ void
 parse_config()
 {
     int i = 0;
-    char *s, buff[256];
+    char *s, buff[150];
     FILE *fp = fopen(CONFIG_FILE, "r");
     if (fp == NULL) {
-        log_message(LOG_FILE," Failed to open "CONFIG_FILE" file for reading!");
+        log_message(LOG_FILE," WARNING: Failed to open "CONFIG_FILE" file for reading!");
         } else {
         /* Read next line */
         while ((s = fgets (buff, sizeof buff, fp)) != NULL)
@@ -307,11 +307,11 @@ parse_config()
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d",\
+        sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
         solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on );
         } else {
-        sprintf( buff, " Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d",\
+        sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
         solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on );
     }
@@ -444,7 +444,7 @@ float
 sensorRead(const char* sensor)
 {
     char path[VALUE_MAX];
-    char value_str[80];
+    char value_str[50];
     int fd;
     char *str = "84 01 55 00 3f ff 3f 10 d7 t=114250";
     const char *result = str;
@@ -463,15 +463,17 @@ sensorRead(const char* sensor)
     /* read the first line of data */
     if (-1 == read(fd, value_str, 39)) {
         log_message(LOG_FILE," Error reading from sensor file. Continuing.");
+        close(fd);
         return(temp);
     }
 
     /* throw the first line away */
-    strncpy(value_str, " ", 80);
+    strncpy(value_str, " ", 48);
 
     /* read the second line into value_str */
     if (-1 == read(fd, value_str, 35)) {
         log_message(LOG_FILE," Error reading row 2 from sensor file. Continuing.");
+        close(fd);
         return(temp);
     }
 
@@ -494,18 +496,21 @@ signal_handler(int sig)
 {
     switch(sig) {
         case SIGUSR1:
-        log_message(LOG_FILE, " Signal SIGUSR1 caught. Will re-read config file soon.");
+        log_message(LOG_FILE, " INFO: Signal SIGUSR1 caught. Will re-read config file soon.");
         need_to_read_cfg = 1;
         break;
         case SIGUSR2:
-        log_message(LOG_FILE, " Signal SIGUSR2 caught. Not implemented. Continuing.");
+        log_message(LOG_FILE, " INFO: Signal SIGUSR2 caught. Not implemented. Continuing.");
         break;
         case SIGHUP:
-        log_message(LOG_FILE, " Signal SIGHUP caught. Not implemented. Continuing.");
+        log_message(LOG_FILE, " INFO: Signal SIGHUP caught. Not implemented. Continuing.");
         break;
         case SIGTERM:
-        log_message(LOG_FILE, " Terminate signal caught. Stopping.");
-        if ( ! DisableGPIOpins() ) { log_message(LOG_FILE, " Cannot disable GPIO! Quitting."); exit(4); }
+        log_message(LOG_FILE, " INFO: Terminate signal caught. Stopping.");
+        if ( ! DisableGPIOpins() ) {
+                        log_message(LOG_FILE, " WARNING: Errors disabling GPIO! Quitting anyway.");
+                        exit(4);
+                }
         log_message(LOG_FILE," Exiting normally. Bye, bye!");
         exit(0);
         break;
@@ -613,7 +618,7 @@ ReadSensors() {
     if (sensor_read_errors>(12*TOTALSENSORS)){
         /* log the errors, clean up and bail out */
         if ( ! DisableGPIOpins() ) {
-            log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed.");
+            log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed. Halting!");
             exit(5);
         }
         log_message(LOG_FILE, " ALARM: Too many sensor read errors! Stopping.");
@@ -654,12 +659,12 @@ ControlStateToGPIO() {
 void
 write_log_start() {
     char start_log_text[80];
-    
-    log_message(LOG_FILE," solard "SOLARDVERSION" now starting up...");
+
+    log_message(LOG_FILE," INFO: solard "SOLARDVERSION" now starting up...");
     log_message(LOG_FILE," Running in "RUNNING_DIR", config file "CONFIG_FILE );
     log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
     log_message(LOG_FILE," writing table data for collectd to "TABLE_FILE );
-    sprintf( start_log_text, " powers: heater=%3.1f W, pump=%3.1f, valve=%3.1f W, self=%3.1f W",\
+    sprintf( start_log_text, " powers: heater=%3.1f W, pump=%3.1f W, valve=%3.1f W, self=%3.1f W",\
              HEATERPPC*6*60, PUMPPPC*6*60, VALVEPPC*6*60, SELFPPC*6*60 );
     log_message(LOG_FILE, start_log_text );
 }
@@ -710,9 +715,9 @@ LogData(short HM) {
 short
 SelectIdleMode() {
     short ModeSelected = 0;
-	short wantP1on = 0;
-	short wantP2on = 0;
-	short wantVon = 0;
+        short wantP1on = 0;
+        short wantP2on = 0;
+        short wantVon = 0;
     /* If furnace is cold - turn pump on to keep it from freezing */
     if (Tkotel < 8.9) wantP1on = 1;
     /* If solar is cold - turn pump on to keep it from freezing */
@@ -731,7 +736,7 @@ SelectIdleMode() {
     if ((Tkolektor > 40)&&(Tkolektor > (TkolektorPrev+0.24))) wantP2on = 1;
     /* If solar is 10 C hotter than furnace and we want to heat the house
     - turn both pumps on and open the valve */
-	if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
+        if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
     ((Tkolektor > (Tkotel+9.9))&&(Tkolektor > TkolektorPrev)) ) {
         wantP1on = 1;
         wantP2on = 1;
@@ -744,32 +749,32 @@ SelectIdleMode() {
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
     }
-	/* Try to keep Grundfoss UPS2 pump dandy - turn it on every 4 hours */
+        /* Try to keep Grundfoss UPS2 pump dandy - turn it on every 4 hours */
     if ( (!CPump1) && (SCPump1 > 4*60*6) ) wantP1on = 1;
-	/* If solar pump has been off for 4 hours during day time - turn it on for a while,
-	to circulate fluid */
+        /* If solar pump has been off for 4 hours during day time - turn it on for a while,
+        to circulate fluid */
     if ( (!CPump2) && (SCPump2 > 4*60*6) && (current_timer_hour >= 5) ) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
 
-	if ( wantP1on ) ModeSelected |= 1;
-	if ( wantP2on ) ModeSelected |= 2;
-	if ( wantVon )  ModeSelected |= 4;
+        if ( wantP1on ) ModeSelected |= 1;
+        if ( wantP2on ) ModeSelected |= 2;
+        if ( wantVon )  ModeSelected |= 4;
     return ModeSelected;
 }
 
 short
 SelectHeatingMode() {
     short ModeSelected = 0;
-	short wantP1on = 0;
-	short wantP2on = 0;
-	short wantVon = 0;
-	short wantHon = 0;
+        short wantP1on = 0;
+        short wantP2on = 0;
+        short wantVon = 0;
+        short wantHon = 0;
 
     /* First get what the idle routine would do: */
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-	if ((Tkolektor > (TboilerHigh + 7.9))&&(Tkolektor > Tkotel)) {
+        if ((Tkolektor > (TboilerHigh + 7.9))&&(Tkolektor > Tkotel)) {
         /* To enable solar heating, solar out temp must be at least 5 C higher than the boiler */
         wantP2on = 1;
     }
@@ -781,7 +786,7 @@ SelectHeatingMode() {
             /* And if valve has been open for 2 minutes - turn furnace pump on */
             if (CValve &&(SCValve > 13)) wantP1on = 1;
         }
-		else {
+                else {
             /* All is cold - use electric heater if possible */
             /* FIXME For now - only turn heater on if valve is fully closed,
                 because it runs with at least one pump */
@@ -789,10 +794,10 @@ SelectHeatingMode() {
         }
     }
 
-	if ( wantP1on ) ModeSelected |= 1;
-	if ( wantP2on ) ModeSelected |= 2;
-	if ( wantVon )  ModeSelected |= 4;
-	if ( wantHon )  ModeSelected |= 8;
+        if ( wantP1on ) ModeSelected |= 1;
+        if ( wantP2on ) ModeSelected |= 2;
+        if ( wantVon )  ModeSelected |= 4;
+        if ( wantHon )  ModeSelected |= 8;
     return ModeSelected;
 }
 
@@ -939,8 +944,8 @@ main(int argc, char *argv[])
     do {
         /* Do all the important stuff... */
         if ( gettimeofday( &tvalBefore, NULL ) ) {
-			log_message(LOG_FILE," WARNING: error getting tvalBefore...");
-		}
+                        log_message(LOG_FILE," WARNING: error getting tvalBefore...");
+                }
         /* get the current hour every 5 minutes for electric heater schedule */
         if ( iter == 30 ) {
             iter = 0;
@@ -959,8 +964,8 @@ main(int argc, char *argv[])
             case 2: /* 2=AUTO+HEAT HOUSE BY SOLAR - mode taken into account by SelectIdle() */
             if ( CriticalTempsFound() ) {
                 /* ActivateEmergencyHeatTransfer(); */
-				/* Set HeatingMode bits for both pumps and valve */
-				HeatingMode = 7;
+                                /* Set HeatingMode bits for both pumps and valve */
+                                HeatingMode = 7;
                 if ( !AlarmRaised ) {
                     log_message(LOG_FILE," ALARM: Activating emergency cooling!");
                     AlarmRaised = 1;
@@ -976,7 +981,6 @@ main(int argc, char *argv[])
                     } else {
                     /* No heating needed - decide how to idle */
                     HeatingMode = SelectIdleMode();
-                    /* For debug purposes - make idle modes > 30 */
                     HeatingMode |= 32;
                 }
             }
@@ -1003,18 +1007,18 @@ main(int argc, char *argv[])
         }
         if ( just_started ) { just_started = 0; }
         if ( gettimeofday( &tvalAfter, NULL ) ) {
-			log_message(LOG_FILE," WARNING: error getting tvalAfter...");
-			sleep( 6 );
-		} else {
+                        log_message(LOG_FILE," WARNING: error getting tvalAfter...");
+                        sleep( 5 );
+                } else {
         /* ..and sleep for rest of the 10 seconds wait period */
         usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
         + tvalAfter.tv_usec) - tvalBefore.tv_usec));
-	    }
+            }
     } while (1);
 
     /* Disable GPIO pins */
     if ( ! DisableGPIOpins() ) {
-        log_message(LOG_FILE," Cannot disable GPIO! Aborting run.");
+        log_message(LOG_FILE," Cannot disable GPIO on exit!");
         return(4);
     }
 
