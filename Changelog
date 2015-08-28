@@ -1,3 +1,21 @@
+2.2 2015-04-15
+Completely rewritten mode selection code - its now bit based, and much easier
+to read.
+Introduced 2 new manual modes: mode=4 turns on pump 1 only and mode=5 turns
+on pump 2 only.
+Fixed a few typos. Disabled the pumps toggling on switch to battery power -
+this needs monitoring to see how the pumps fare without proper power
+management.
+Electric heater now has a minimum OFF time of 1 minute before being allowed
+to be turned back on.
+Adjusted idle mode pump control: if furnace is hot (> 44 C) - even slight
+increase in temp will turn pump on; if furnace is warm (> 38 C) - there needs
+to be a ~0.12 C increase to trigger pump on; and last - if furnace is cold, but
+warming quickly, e.i. > 24 C but increasing by ~0.24 C per 10 seconds - the
+pump will be turned on.
+Allow temp changes of maximum 4 C - the previous change to 3 C max was not
+sufficient after all...
+
 2.1
 Furnace is being protected from freezing if its less than 9 C now.
 Changed is the idle mode pump control: now there are 3 stages; if furnace is
