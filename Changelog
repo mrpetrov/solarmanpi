@@ -1,3 +1,35 @@
+3.1 2015-04-27
+Fixed a few syntax errors that were causing solard to behave annoyingly -
+human readable cycles calculations should be enclosed in braces, like so:
+10 sec * 6 - to get a minute * 60 - to get an hour, etc should be written
+like X % (6*60) and NOT LIKE X % 6*60 ! That last one caused solard to
+misbehave, but that is clearly wrong calculation, so if it were used at
+some place important - who knows what could have happened...
+Increased boiler electrical heater minimum on time to 2 minutes at a time.
+Changed the done start cycles for both pumps so if a restart happens even
+though everything is calm in the system, the pumps get a little workout.
+Modified GetCurrentTime() to log the new hours after adjustment, and only
+do so when they are actually changed, but not every day as would have been
+done with the previous code. Initial hours are also such that change should
+be done upon start up, so if there is no trace in logs - something is wrong.
+Introduced two new "mode"s: 7 and 8. They turn on the electrical heater if
+there is need to heat the boiler up, respectively obeying the allowed hours
+or DISREGARDING them. Useful if the pumps and valve need to be shut off, but
+the boiler still stay in use, for example if a pump or the valve needs to be
+sent for servicing. Follows the "mode"s description in full:
+ # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
+ # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANAUL PUMP1+HEATER
+ # mode: 7=AUTO ELECTICAL HEATER ONLY - this one obeys start/stop hours
+ # mode: 8=AUTO ELECTICAL HEATER ONLY, DOES NOT CARE ABOUT SCHEDULE !!!
+With these extra AUTO* modes, the manual modes can be avoided, and in doing
+so - the accounting for the electric power use will stay accurate.
+solard now uses new defaults if no config file is found:
+  mode=1
+  wanted_T=46
+  use_electric_start_hour=3
+  use_electric_stop_hour=6
+  keep_pump1_on=0
+
 3.0 2015-04-26
 Taught solard to keep track of current month and adjust the two variables
 holding the night tariff electricity rate start and stop hours. These
