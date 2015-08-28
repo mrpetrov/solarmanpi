@@ -41,7 +41,7 @@
     keep_pump1_on=0
 */
 
-#define SOLARDVERSION    "3.1 2015-04-27"
+#define SOLARDVERSION    "3.2 2015-05-12"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -84,7 +84,7 @@
 #define POWER  25 /* P1-22 */
 
 /* Maximum difference allowed for data received from sensors between reads, C */
-#define MAX_TEMP_DIFF        4
+#define MAX_TEMP_DIFF        5
 
 /* Number of all sensors to be used by the system */
 #define TOTALSENSORS         4
@@ -197,7 +197,7 @@ SetDefaultCfg() {
     solard_cfg.keep_pump1_on = 0;
 }
 
-void
+short
 log_message(char *filename, char *message) {
     FILE *logfile;
     char file_string[300];
@@ -210,9 +210,10 @@ log_message(char *filename, char *message) {
     strftime( timestamp, sizeof timestamp, "%F %T", t_struct );
     sprintf( file_string, "%s%s", timestamp, message );
     logfile = fopen( filename, "a" );
-    if ( !logfile ) return;
+    if ( !logfile ) return -1;
     fprintf( logfile, "%s\n", file_string );
     fclose( logfile );
+	return 0;
 }
 
 /* this version of the logging function destroys the opened file contents */
@@ -537,7 +538,7 @@ daemonize()
 
     if(getppid()==1) return; /* already a daemon */
     i=fork();
-    if (i<0) exit(1); /* fork error */
+    if (i<0) { printf("fork error!\n"); exit(1); }/* fork error */
     if (i>0) exit(0); /* parent exits */
     /* child (daemon) continues */
     setsid(); /* obtain a new process group */
@@ -546,7 +547,7 @@ daemonize()
     umask(022); /* set newly created file permissions */
     chdir(RUNNING_DIR); /* change running directory */
     lfp=open(LOCK_FILE,O_RDWR|O_CREAT,0644);
-    if (lfp<0) exit(1); /* can not open */
+    if (lfp<0) exit(2); /* can not open */
     if (lockf(lfp,F_TLOCK,0)<0) exit(0); /* can not lock */
     /* first instance continues */
     sprintf(str,"%d\n",getpid());
@@ -606,6 +607,20 @@ ReadSensors() {
         if ( new_val != -200 ) {
             if (sensor_read_errors) sensor_read_errors--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
+            if ((new_val < ((sensors[i+5]-(2*MAX_TEMP_DIFF)))) {
+                sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
+                new_val, i+1, sensors[i+5] );
+                log_message(LOG_FILE, msg);
+                new_val = sensors[i+5];
+				sensor_read_errors++;
+            }
+            if ((new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF)))) {
+                sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
+                new_val, i+1, sensors[i+5] );
+                log_message(LOG_FILE, msg);
+                new_val = sensors[i+5];
+				sensor_read_errors++;
+            }
             if ((new_val < (sensors[i+5]-MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
                 new_val, i+1, sensors[i+5]-MAX_TEMP_DIFF );
@@ -623,7 +638,7 @@ ReadSensors() {
         }
         else {
             sensor_read_errors++;
-            sprintf( msg, " WARNING: ReadSensors() errors++ at sensor %d.", i+1 );
+            sprintf( msg, " WARNING: ReadSensors() errors++ for sensor %d.", i+1 );
             log_message(LOG_FILE, msg);
         }
     }
@@ -634,7 +649,7 @@ ReadSensors() {
             exit(5);
         }
         log_message(LOG_FILE, " ALARM: Too many sensor read errors! Stopping.");
-        exit(10);
+        exit(6);
     }
 }
 
@@ -961,7 +976,22 @@ main(int argc, char *argv[])
 
     SetDefaultCfg();
 
-    daemonize();
+    /* before main work starts - try to open the log files to write a new line
+       ...and SCREAM if there is trouble! */
+	if (log_message(LOG_FILE," ***\n")) {
+	  printf(" Cannot open the mandatory "LOG_FILE" file needed for operation!\n");
+	  exit(3);
+	}
+	if (log_message(DATA_FILE," ***\n")) {
+	  printf(" Cannot open the mandatory "DATA_FILE" file needed for operation!\n");
+	  exit(3);
+	}
+	if (log_message(TABLE_FILE," ***\n")) {
+	  printf(" Cannot open the mandatory "TABLE_FILE" file needed for operation!\n");
+	  exit(3);
+	}
+
+	daemonize();
 
     /* Enable GPIO pins */
     if ( ! EnableGPIOpins() ) {
