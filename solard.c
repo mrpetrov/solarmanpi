@@ -39,7 +39,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "2.4 2015-04-18"
+#define SOLARDVERSION    "2.5 2015-04-19"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -57,7 +57,7 @@
 #define RUNNING_DIR     "/tmp"
 #define LOCK_FILE       "/run/solard.pid"
 #define LOG_FILE        "/var/log/solard.log"
-#define DATA_FILE       "/run/shm/solard_data.csv"
+#define DATA_FILE       "/run/shm/solard_data.log"
 #define TABLE_FILE      "/run/shm/solard_current"
 #define CONFIG_FILE     "/etc/solard.cfg"
 
@@ -124,18 +124,25 @@ short controls[7] = { -1, 0, 0, 0, 0, 0, 0 };
 #define   CPowerByBatteryPrev   controls[6]
 
 /* controls state cycles - zeroed on change to state */
-long ctrlstatecycles[6] = { -1, 0, 0, 0, 0, 0 };
+long ctrlstatecycles[5] = { -1, 0, 0, 0, 8 };
 
 #define   SCPump1               ctrlstatecycles[1]
 #define   SCPump2               ctrlstatecycles[2]
 #define   SCValve               ctrlstatecycles[3]
 #define   SCHeater              ctrlstatecycles[4]
-#define   SCHeaterOnCycles      ctrlstatecycles[5]
 
-/* constant of Watts of electricity used per 10 secs */
-#define   POWERPERCYCLE         8.34
+float TotalPowerUsed;
+float NightlyPowerUsed;
+
+/* solard keeps track of total and night tariff watt-hours electrical power used */
+/* night tariff is between 23:00 and 06:00 */
+/* constants of Watts of electricity used per 10 secs */
+#define   HEATERPPC         8.340
+#define   PUMPPPC           0.140
+#define   VALVEPPC          0.006
+#define   SELFPPC           0.014
 /* my boiler uses 3kW per hour, so this is 0,00834 kWh per 10 seconds */
-/* this in W per 10 seconds is 8.34 W */
+/* this in Wh per 10 seconds is 8.34 W */
 
 struct structsolard_cfg
 {
@@ -182,18 +189,18 @@ SetDefaultCfg() {
 void
 log_message(char *filename, char *message) {
     FILE *logfile;
-    char msg[100];
-    char buff[70];
+    char file_string[300];
+    char timestamp[30];
     time_t t;
     struct tm *t_struct;
 
     t = time(NULL);
     t_struct = localtime( &t );
-    strftime( buff, sizeof buff, "%F %T", t_struct );
-    sprintf( msg, "%s%s", buff, message );
+    strftime( timestamp, sizeof timestamp, "%F %T", t_struct );
+    sprintf( file_string, "%s%s", timestamp, message );
     logfile = fopen( filename, "a" );
-    if ( ! logfile ) return;
-    fprintf( logfile, "%s\n", msg );
+    if ( !logfile ) return;
+    fprintf( logfile, "%s\n", file_string );
     fclose( logfile );
 }
 
@@ -201,18 +208,18 @@ log_message(char *filename, char *message) {
 void
 log_msg_ovr(char *filename, char *message) {
     FILE *logfile;
-    char msg[100];
-    char buff[70];
+    char file_string[300];
+    char timestamp[30];
     time_t t;
     struct tm *t_struct;
 
     t = time(NULL);
     t_struct = localtime( &t );
-    strftime( buff, sizeof buff, "%F %T", t_struct );
-    sprintf( msg, "%s%s", buff, message );
+    strftime( timestamp, sizeof timestamp, "%F %T", t_struct );
+    sprintf( file_string, "%s%s", timestamp, message );
     logfile = fopen( filename, "w" );
-    if ( ! logfile ) return;
-    fprintf( logfile, "%s\n", msg );
+    if ( !logfile ) return;
+    fprintf( logfile, "%s\n", file_string );
     fclose( logfile );
 }
 
@@ -660,30 +667,31 @@ GetCurrentTime() {
 
 short
 BoilerHeatingNeeded() {
-    /* Check just the higher temp sensor to determine if boiler needs heating */
-    if ( (TboilerHighPrev < (float) solard_cfg.wanted_T) &&
-         (TboilerHigh < (float) solard_cfg.wanted_T) ) return 1;
-    else return 0;
+    if ( TboilerLow > (float)solard_cfg.wanted_T ) return 0;
+    if ( TboilerHigh < ((float)solard_cfg.wanted_T - 0.3) ) return 1;
+    if ( (TboilerHigh < TboilerHighPrev) &&
+         (TboilerHighPrev < (float)solard_cfg.wanted_T ) ) return 1;
+    return 0;
 }
 
 void
 LogData(short HM) {
-    char msg[300];
-    long WattsUsed = (long)(((float)SCHeaterOnCycles)*POWERPERCYCLE);
+    char data[280];
     /* Log data like so:
-        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH,
-    BOILERTEMPWANTED,HM, PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY, WATTSUSED */
-    sprintf( msg, ", %3.3f,%3.3f,%3.3f,%3.3f, %d,%d, %d,%d,%d,%d,%d, %lu",\
-    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, HM,\
-    CPump1, CPump2, CValve, CHeater, CPowerByBattery, WattsUsed );
-    log_message(DATA_FILE, msg);
+    Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,HM,
+    PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
+    sprintf( data, ", %3.3f,%3.3f,%3.3f,%3.3f, %d,%d, %d,%d,%d,%d,%d, %3.3f,%3.3f",\
+    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, HM, CPump1,\
+    CPump2, CValve, CHeater, CPowerByBattery, TotalPowerUsed, NightlyPowerUsed );
+    log_message(DATA_FILE, data);
 
-    sprintf( msg, ",Temp1,%3.3f\n_,Temp2,%3.3f\n_,Temp3,%3.3f\n_,Temp4,%3.3f\n_"\
-                  ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_"\
-                  ",PoweredByBattery,%d\n_,TempWanted,%d\n_,ElectricityUsed,%lu",\
+    sprintf( data, ",Temp1,%3.3f\n_,Temp2,%3.3f\n_,Temp3,%3.3f\n_,Temp4,%3.3f\n_"\
+                  ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n_"\
+                  ",TempWanted,%d\n_,ElectricityUsed,%lu\n_,ElectricityUsedNT,%lu",\
                   Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
-                  CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T, WattsUsed );
-    log_msg_ovr(TABLE_FILE, msg);
+                  CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T,\
+                  (long)TotalPowerUsed, (long)NightlyPowerUsed );
+    log_msg_ovr(TABLE_FILE, data);
 }
 
 short
@@ -746,7 +754,7 @@ SelectHeatingMode() {
             /* The furnace is hot enough - use it */
             wantP1on = 1;
             wantVon = 1;
-            } 
+            }
 		else {
             /* All is cold - use electric heater if possible */
             wantHon = 1;
@@ -767,7 +775,7 @@ void TurnPump2On()   { if (!CPump2) { CPump2  = 1; SCPump2 = 0; } }
 void TurnValveOff()  { if (CValve && (SCValve > 15)) { CValve  = 0; SCValve = 0; } }
 void TurnValveOn()   { if (!CValve) { CValve  = 1; SCValve = 0; } }
 void TurnHeaterOff() { if (CHeater) { CHeater = 0; SCHeater = 0; } }
-void TurnHeaterOn()  { if ((!CHeater) && (SCHeater > 5)) { CHeater = 1; SCHeater = 0; } }
+void TurnHeaterOn()  { if ((!CHeater) && (SCHeater > 10)) { CHeater = 1; SCHeater = 0; } }
 
 void
 RequestElectricHeat() {
@@ -817,7 +825,27 @@ ActivateHeatingMode(const short HeatMode) {
     SCPump2++;
     SCValve++;
     SCHeater++;
-    if (CHeater) SCHeaterOnCycles++;
+
+    /* Calculate total and night tariff electrical power used here: */
+    if ( CHeater ) {
+        TotalPowerUsed += HEATERPPC;
+        if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += HEATERPPC; }
+    }
+    if ( CPump1 ) {
+        TotalPowerUsed += PUMPPPC;
+        if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += PUMPPPC; }
+    }
+    if ( CPump2 ) {
+        TotalPowerUsed += PUMPPPC;
+        if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += PUMPPPC; }
+    }
+    if ( CValve ) {
+        TotalPowerUsed += VALVEPPC;
+        if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += VALVEPPC; }
+    }
+    TotalPowerUsed += SELFPPC;
+    if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += SELFPPC; }
+
     /* calculate desired new state */
     if ( CPump1 ) new_state |= 1;
     if ( CPump2 ) new_state |= 2;
@@ -879,6 +907,8 @@ main(int argc, char *argv[])
     parse_config();
 
     just_started = 1;
+    TotalPowerUsed = 0;
+    NightlyPowerUsed = 0;
 
     do {
         /* Do all the important stuff... */
