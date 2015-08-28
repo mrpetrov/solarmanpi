@@ -779,12 +779,15 @@ SelectIdleMode() {
     if (Tkolektor < 8.9) wantP2on = 1;
     /* Furnace is above 52 - at these temps always run the pump */
     if (Tkotel > 52) wantP1on = 1;
-    /* Furnace is above 45 and rising - turn pump on */
-    if ((Tkotel > 44.9)&&(Tkotel > TkotelPrev)) wantP1on = 1;
-    /* Furnace is above 36 and rising slowly - turn pump on */
-    if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
-    /* Furnace is above 22 and rising QUICKLY - turn pump on to limit furnace thermal shock */
-    if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
+    /* Only activate furnace temp raising logic if outside is colder */
+    if (Tkotel > Tkolektor) {
+        /* Furnace is above 45 and rising - turn pump on */
+        if ((Tkotel > 44.9)&&(Tkotel > TkotelPrev)) wantP1on = 1;
+        /* Furnace is above 36 and rising slowly - turn pump on */
+        if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
+        /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
+        if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
+    }
     /* Solar has heat in excess - rise boiler temp to 52 C so expensive sources 
     are not used later on during the day */
     if ((Tkolektor > (TboilerHigh+6))&&(TboilerHigh < 52)) wantP2on = 1;
