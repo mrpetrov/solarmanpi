@@ -39,7 +39,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "2.6 2015-04-20"
+#define SOLARDVERSION    "2.7 2015-04-21"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -124,7 +124,7 @@ short controls[7] = { -1, 0, 0, 0, 0, 0, 0 };
 #define   CPowerByBatteryPrev   controls[6]
 
 /* controls state cycles - zeroed on change to state */
-long ctrlstatecycles[5] = { -1, 0, 0, 0, 8 };
+long ctrlstatecycles[5] = { -1, 0, 0, 22, 22 };
 
 #define   SCPump1               ctrlstatecycles[1]
 #define   SCPump2               ctrlstatecycles[2]
@@ -140,9 +140,14 @@ float NightlyPowerUsed;
 #define   HEATERPPC         8.340
 #define   PUMPPPC           0.140
 #define   VALVEPPC          0.006
-#define   SELFPPC           0.014
+#define   SELFPPC           0.022
 /* my boiler uses 3kW per hour, so this is 0,00834 kWh per 10 seconds */
 /* this in Wh per 10 seconds is 8.34 W */
+#define   HEATERPOWER       6*60*HEATERPPC
+#define   PUMPPOWER         6*60*PUMPPPC
+#define   VALVEPOWER        6*60*VALVEPPC
+#define   SELFPOWER         6*60*SELFPPC
+
 
 struct structsolard_cfg
 {
@@ -632,8 +637,8 @@ ReadExternalPower() {
 /* Return non-zero value on critical condition found based on current data in sensors[] */
 short
 CriticalTempsFound() {
-    if (Tkotel >= 77) return 1;
-    if (Tkolektor >= 88) return 2;
+    if (Tkotel >= 72) return 1;
+    if (Tkolektor >= 85) return 2;
     if (TboilerHigh >= 70) return 3;
     if (Tkolektor <= 4) return -1;
     return 0;
@@ -649,6 +654,19 @@ ControlStateToGPIO() {
     */
     GPIOWrite( VALVE, CValve );
     GPIOWrite( HEAT,  CHeater );
+}
+
+void
+write_log_start() {
+    char start_log_text[80];
+    
+    log_message(LOG_FILE," solard "SOLARDVERSION" now starting up...");
+    log_message(LOG_FILE," Running in "RUNNING_DIR", config file "CONFIG_FILE );
+    log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
+    log_message(LOG_FILE," writing table data for collectd to "TABLE_FILE );
+    sprintf( start_log_text, " powers: heater=%3.1f W, pump=%3.1f, valve=%3.1f W, self=%3.1f W",\
+             HEATERPPC*6*60, PUMPPPC*6*60, VALVEPPC*6*60, SELFPPC*6*60 );
+    log_message(LOG_FILE, start_log_text );
 }
 
 /* Function to get current time and put the hour in current_timer_hour */
@@ -720,6 +738,13 @@ SelectIdleMode() {
         wantP2on = 1;
         wantVon = 1;
     }
+    /* Furnace has heat in excess - open the valve so boiler can build up
+    heat now and probably save on electricity use later on */
+    if ((TboilerHigh > (float)solard_cfg.wanted_T)&&(Tkotel > (TboilerHigh+6))) {
+        wantVon = 1;
+        /* And if valve has been open for 2 minutes - turn furnace pump on */
+        if (CValve && (SCValve > 9)) wantP1on = 1;
+    }
 	/* If furnace pump has been off for 7 days - turn it on for a while, to circulate fluid,
     keep it in shape */
     if ( (!CPump1) && (SCPump1 > 7*24*60*6) ) wantP1on = 1;
@@ -754,9 +779,10 @@ SelectHeatingMode() {
         /* Not enough heat in the solar collector; check other sources of heat */
         if (Tkotel > (TboilerHigh + 3.9)) {
             /* The furnace is hot enough - use it */
-            wantP1on = 1;
             wantVon = 1;
-            }
+            /* And if valve has been open for 2 minutes - turn furnace pump on */
+            if (CValve &&(SCValve > 13)) wantP1on = 1;
+        }
 		else {
             /* All is cold - use electric heater if possible */
             /* FIXME For now - only turn heater on if valve is fully closed,
@@ -772,14 +798,15 @@ SelectHeatingMode() {
     return ModeSelected;
 }
 
-void TurnPump1Off()  { if ((CPump1 && !CValve) && (SCPump1 > 5)) { CPump1 = 0; SCPump1 = 0; } }
+void TurnPump1Off()  { if (CPump1 && !CValve && (SCPump1 > 5) && (SCValve > 5))
+                                    { CPump1 = 0; SCPump1 = 0; } }
 void TurnPump1On()   { if (!CPump1) { CPump1  = 1; SCPump1 = 0; } }
 void TurnPump2Off()  { if (CPump2 && (SCPump2 > 5)) { CPump2  = 0; SCPump2 = 0; } }
 void TurnPump2On()   { if (!CPump2) { CPump2  = 1; SCPump2 = 0; } }
-void TurnValveOff()  { if (CValve && (SCValve > 15)) { CValve  = 0; SCValve = 0; } }
-void TurnValveOn()   { if (!CValve) { CValve  = 1; SCValve = 0; } }
+void TurnValveOff()  { if (CValve && (SCValve > 23)) { CValve  = 0; SCValve = 0; } }
+void TurnValveOn()   { if (!CValve && (SCValve > 5)) { CValve  = 1; SCValve = 0; } }
 void TurnHeaterOff() { if (CHeater) { CHeater = 0; SCHeater = 0; } }
-void TurnHeaterOn()  { if ((!CHeater) && (SCHeater > 10)) { CHeater = 1; SCHeater = 0; } }
+void TurnHeaterOn()  { if ((!CHeater) && (SCHeater > 29)) { CHeater = 1; SCHeater = 0; } }
 
 void
 RequestElectricHeat() {
@@ -903,10 +930,7 @@ main(int argc, char *argv[])
         return(2);
     }
 
-    log_message(LOG_FILE," solard "SOLARDVERSION" now starting up...");
-    log_message(LOG_FILE," Running in "RUNNING_DIR", config file "CONFIG_FILE );
-    log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
-    log_message(LOG_FILE," writing table data for collectd to "TABLE_FILE );
+    write_log_start();
 
     parse_config();
 
