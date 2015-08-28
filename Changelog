@@ -1,3 +1,19 @@
+2.7 2015-04-21
+Now printing the hard-coded constants for the power usage of all the used
+electrical consumers on start-up.
+Another change is to only toggle valve state if it has been off for 1 minutes
+or on for 4 minutes.
+The pump will now stay on for 1 minute after the valve has stated closing -
+this way, while the valve is open - the fluid will flow through it.
+IdleSelect routine now has a mode where it builds up boiler heat from furnace
+while its hot, so it will not need to use electricity later on - this mode
+triggers if the furnace is more than 6 C hotter than the boiler high temp,
+which should be hotter than the temp desired.
+Current furnace sensor position is a bit questionable, so lower furnace
+critical temp to 72 C - sensor is reading 5 C lower due to its placing.
+While at it - change solar critical temp too - now its 85 C, and if need be -
+it can be lifted back up again, safer this way...
+
 2.6 2015-04-20
 Several temperature triggering adjustments: first - there seems to be no point
 in trying to heat the boiler with the serpentine with only 1.5 C more - so,
