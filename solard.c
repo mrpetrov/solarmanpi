@@ -24,8 +24,8 @@
     # version 1.0
     # $date-id
 
-    # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR;
-    # mode: 3=MANAUL PUMP1+HEATER; 4=MANUAL PUMP1 ONLY; 5=MANUAL PUMP2 ONLY;
+    # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY; 
+    # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANAUL PUMP1+HEATER
     mode=1
 
     # wanted_T: the desired temperature of water in tank
@@ -39,7 +39,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "2.7 2015-04-21"
+#define SOLARDVERSION    "2.8 2015-04-23"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -143,11 +143,6 @@ float NightlyPowerUsed;
 #define   SELFPPC           0.022
 /* my boiler uses 3kW per hour, so this is 0,00834 kWh per 10 seconds */
 /* this in Wh per 10 seconds is 8.34 W */
-#define   HEATERPOWER       6*60*HEATERPPC
-#define   PUMPPOWER         6*60*PUMPPPC
-#define   VALVEPOWER        6*60*VALVEPPC
-#define   SELFPOWER         6*60*SELFPPC
-
 
 struct structsolard_cfg
 {
@@ -302,10 +297,10 @@ parse_config()
     if ( i ) solard_cfg.wanted_T = i;
     strcpy( buff, solard_cfg.use_electric_start_hour_str );
     i = atoi( buff );
-    if ( i ) solard_cfg.use_electric_start_hour = i;
+    solard_cfg.use_electric_start_hour = i;
     strcpy( buff, solard_cfg.use_electric_stop_hour_str );
     i = atoi( buff );
-    if ( i ) solard_cfg.use_electric_stop_hour = i;
+    solard_cfg.use_electric_stop_hour = i;
     strcpy( buff, solard_cfg.keep_pump1_on_str );
     i = atoi( buff );
     solard_cfg.keep_pump1_on = i;
@@ -694,7 +689,7 @@ BoilerHeatingNeeded() {
 
 void
 LogData(short HM) {
-    char data[280];
+    static char data[280];
     /* Log data like so:
     Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,HM,
     PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
@@ -722,14 +717,18 @@ SelectIdleMode() {
     if (Tkotel < 8.9) wantP1on = 1;
     /* If solar is cold - turn pump on to keep it from freezing */
     if (Tkolektor < 8.9) wantP2on = 1;
-    /* Furnace is above 60 - at these temps always run the pump */
-    if (Tkotel > 60) wantP1on = 1;
+    /* Furnace is above 52 - at these temps always run the pump */
+    if (Tkotel > 52) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
     if ((Tkotel > 44.9)&&(Tkotel > TkotelPrev)) wantP1on = 1;
     /* Furnace is above 36 and rising slowly - turn pump on */
     if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
     /* Furnace is above 22 and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
+    /* Solar is above 60 and rising slowly - turn pump on for good */
+    if ((Tkolektor > 60)&&(Tkolektor > (TkolektorPrev+0.12))) wantP2on = 1;
+    /* Solar is above 40 and rising QUICKLY - turn pump on for good */
+    if ((Tkolektor > 40)&&(Tkolektor > (TkolektorPrev+0.24))) wantP2on = 1;
     /* If solar is 10 C hotter than furnace and we want to heat the house
     - turn both pumps on and open the valve */
 	if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
@@ -745,9 +744,8 @@ SelectIdleMode() {
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
     }
-	/* If furnace pump has been off for 7 days - turn it on for a while, to circulate fluid,
-    keep it in shape */
-    if ( (!CPump1) && (SCPump1 > 7*24*60*6) ) wantP1on = 1;
+	/* Try to keep Grundfoss UPS2 pump dandy - turn it on every 4 hours */
+    if ( (!CPump1) && (SCPump1 > 4*60*6) ) wantP1on = 1;
 	/* If solar pump has been off for 4 hours during day time - turn it on for a while,
 	to circulate fluid */
     if ( (!CPump2) && (SCPump2 > 4*60*6) && (current_timer_hour >= 5) ) wantP2on = 1;
@@ -805,7 +803,7 @@ void TurnPump2Off()  { if (CPump2 && (SCPump2 > 5)) { CPump2  = 0; SCPump2 = 0; 
 void TurnPump2On()   { if (!CPump2) { CPump2  = 1; SCPump2 = 0; } }
 void TurnValveOff()  { if (CValve && (SCValve > 23)) { CValve  = 0; SCValve = 0; } }
 void TurnValveOn()   { if (!CValve && (SCValve > 5)) { CValve  = 1; SCValve = 0; } }
-void TurnHeaterOff() { if (CHeater) { CHeater = 0; SCHeater = 0; } }
+void TurnHeaterOff() { if (CHeater && (SCHeater > 5)) { CHeater = 0; SCHeater = 0; } }
 void TurnHeaterOn()  { if ((!CHeater) && (SCHeater > 29)) { CHeater = 1; SCHeater = 0; } }
 
 void
@@ -896,7 +894,7 @@ AdjustHeatingModeForBatteryPower(short HM) {
         /* If we just switched to battery.. */
         if ( CPowerByBattery ) {
             /* turn everything OFF */
-            HM = 0;
+            /* HM = 0; */
             log_message(LOG_FILE," WARNING: Switch to BATTERY POWER detected.");
         }
         else {
@@ -940,7 +938,9 @@ main(int argc, char *argv[])
 
     do {
         /* Do all the important stuff... */
-        gettimeofday( &tvalBefore, NULL );
+        if ( gettimeofday( &tvalBefore, NULL ) ) {
+			log_message(LOG_FILE," WARNING: error getting tvalBefore...");
+		}
         /* get the current hour every 5 minutes for electric heater schedule */
         if ( iter == 30 ) {
             iter = 0;
@@ -968,7 +968,7 @@ main(int argc, char *argv[])
             }
             else {
                 if ( AlarmRaised ) {
-                    log_message(LOG_FILE," Critical condition resolved. Running normally.");
+                    log_message(LOG_FILE," INFO: Critical condition resolved. Running normally.");
                     AlarmRaised = 0;
                 }
                 if (BoilerHeatingNeeded()) {
@@ -976,26 +976,25 @@ main(int argc, char *argv[])
                     } else {
                     /* No heating needed - decide how to idle */
                     HeatingMode = SelectIdleMode();
+                    /* For debug purposes - make idle modes > 30 */
+                    HeatingMode |= 32;
                 }
-                /*AdjustHeatingModeForBatteryPower(HeatingMode);*/
             }
             break;
-            case 3: /* 3=MANAUL PUMP1+HEATER - furnace pump and heater power ON */
-            HeatingMode = 17;
-            /* But still manage pumps in case of power failure */
-            /*AdjustHeatingModeForBatteryPower(HeatingMode);*/
-            break;
-            case 4: /* 4=MANUAL PUMP1 ONLY - only furnace pump ON */
+            case 3: /* 3=MANUAL PUMP1 ONLY - only furnace pump ON */
             HeatingMode = 1;
-            /* But still manage pumps in case of power failure */
-            /*AdjustHeatingModeForBatteryPower(HeatingMode);*/
             break;
-            case 5: /* 5=MANUAL PUMP2 ONLY - only solar pump ON */
+            case 4: /* 4=MANUAL PUMP2 ONLY - only solar pump ON */
             HeatingMode = 2;
-            /* But still manage pumps in case of power failure */
-            /*AdjustHeatingModeForBatteryPower(HeatingMode);*/
+            break;
+            case 5: /* 5=MANUAL HEATER ONLY - set THERMOSTAT CORRECTLY!!! */
+            HeatingMode = 16;
+            break;
+            case 6: /* 6=MANAUL PUMP1+HEATER - furnace pump and heater power ON */
+            HeatingMode = 17;
             break;
         }
+        AdjustHeatingModeForBatteryPower(HeatingMode);
         ActivateHeatingMode(HeatingMode);
         LogData(HeatingMode);
         if ( need_to_read_cfg ) {
@@ -1003,10 +1002,14 @@ main(int argc, char *argv[])
             parse_config();
         }
         if ( just_started ) { just_started = 0; }
-        gettimeofday( &tvalAfter, NULL );
+        if ( gettimeofday( &tvalAfter, NULL ) ) {
+			log_message(LOG_FILE," WARNING: error getting tvalAfter...");
+			sleep( 6 );
+		} else {
         /* ..and sleep for rest of the 10 seconds wait period */
         usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
         + tvalAfter.tv_usec) - tvalBefore.tv_usec));
+	    }
     } while (1);
 
     /* Disable GPIO pins */
