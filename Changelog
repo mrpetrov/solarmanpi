@@ -1,3 +1,21 @@
+2.6 2015-04-20
+Several temperature triggering adjustments: first - there seems to be no point
+in trying to heat the boiler with the serpentine with only 1.5 C more - so,
+increase the difference required to use the furnace to 4 C; solar get used if
+its at 8 C more than boiler; if furnace is above 60 C - always turn the pump on
+as this is where the temps get critical, but they are not there yet, so this
+will help keep things under control; furnace pump turn on temps are now as
+follows: quickly heating - from 22 C, slowly heating - from 36 C, and finally
+- if heating above 45 C.
+In main SelectHeatingMode() only turn the electric heater after the valve is
+absolutely sure to be closed.
+Now allowing the colder end of the boiler to get to temp wanted + 1 C while
+heating it up on electricity - it was a bit sluggish in reaching target temp
+on the hot end otherwise.
+Fixed electricity night tariff hours to start from 23:00 to 05:59 - it was a
+bit off.
+Electrical heater minimum off time is now 5 minutes.
+
 2.5 2015-04-19
 Changed how electrical power used gets handled by solard - now we have two
 separate float variables TotalPowerUsed and NightlyPowerUsed which get updated
