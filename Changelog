@@ -1,3 +1,10 @@
+1.9
+ReadSensors() now makes corrections upon too wild data of max 2 C. It also
+is a lot more informative for the corrections in the log file.
+Changed the diff required between furnace temp and boiler to 1.5 C to use as
+a heat source.
+Critical temps changes: max boiler t=70, max furnace t=77, max solar temp=88
+
 1.8 2015-04-11
 Fixed some typos. Added _Prev vars for temperature sensor readings and the
 controls[] array. The controls[] array also got a new ctrlstatecycles[5]
