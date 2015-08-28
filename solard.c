@@ -811,6 +811,8 @@ SelectIdleMode() {
     /* If solar pump has been off for 20 minutes during day time - turn it on for a while,
     to circulate fluid */
     if ( (!CPump2) && (SCPump2 > (6*20)) && (current_timer_hour >= 5) ) wantP2on = 1;
+    /* If solar pump has been on for 1 minute - shut it down for a while */
+    if ( (CPump2) && (SCPump2 > 5) ) wantP2on = 0;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
 
     if ( wantP1on ) ModeSelected |= 1;
@@ -834,6 +836,8 @@ SelectHeatingMode() {
     if ((Tkolektor > (TboilerHigh + 7.9))&&(Tkolektor > Tkotel)) {
         /* To enable solar heating, solar out temp must be at least 5 C higher than the boiler */
         wantP2on = 1;
+       /* If solar pump has been on for 1 minute - shut it down for a while */
+       if ( (CPump2) && (SCPump2 > 5) ) wantP2on = 0;
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
@@ -862,7 +866,7 @@ void TurnPump1Off()  { if (CPump1 && !CValve && (SCPump1 > 5) && (SCValve > 5))
                                     { CPump1 = 0; SCPump1 = 0; } }
 void TurnPump1On()   { if (!CPump1) { CPump1  = 1; SCPump1 = 0; } }
 void TurnPump2Off()  { if (CPump2 && (SCPump2 > 5)) { CPump2  = 0; SCPump2 = 0; } }
-void TurnPump2On()   { if (!CPump2) { CPump2  = 1; SCPump2 = 0; } }
+void TurnPump2On()   { if (!CPump2 && (SCPump2 > 2)) { CPump2  = 1; SCPump2 = 0; } }
 void TurnValveOff()  { if (CValve && (SCValve > 23)) { CValve  = 0; SCValve = 0; } }
 void TurnValveOn()   { if (!CValve && (SCValve > 5)) { CValve  = 1; SCValve = 0; } }
 void TurnHeaterOff() { if (CHeater && (SCHeater > 11)) { CHeater = 0; SCHeater = 0; } }
