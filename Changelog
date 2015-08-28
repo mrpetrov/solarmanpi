@@ -1,3 +1,29 @@
+2.4 2015-04-18
+solard now records the electrical power used since started. This is done by
+growing ctrlstatecycles[] array to 6 cells where the sixth one is being used
+to store the number of 10 seconds cycles with electric power on. Actual power
+used in watts per 10 seconds is hard-coded to 8.34 W for 3 kW electrical heater
+in the constant POWERPERCYCLE - adjust it according to your actual heater power.
+LogData() was optimized to write data including new usage counter to the log
+file in one go instead of open, write, close for each of the 11 written data
+tokens. Also, the human-readable CSV file now shows watts used.
+Restarting the collectd daemon is needed, so a new RRD file can be created.
+
+2.3 2015-04-16
+Fixed "emergency heat transfer" to actually do its thing - it was b0rken and
+now it will work as intended, plus there is less code now.
+Moved the max temp difference allowed between reads to a separate #define.
+Fixed furnace pump periodic turn on to actually trigger every 7 days.
+Solar pump is turned on every 4 hours between 05:00 and 0:00 - this should
+keep the vacuum tubes of the solar panel filled with water during the hot
+days. NOTE May need extra attention when the panel get installed later.
+Lowered the temp difference required to use the solar panel to heat up the
+house to 10 C in mode=2.
+Changed BoilerHeatingNeeded() to trigger only if current AND previous boiler
+hot end temps are both lower than the temp wanted.
+Removed the _Prev cells from controls[] array for both pumps, valve and heater
+- they were not used anywhere, anyway...
+
 2.2 2015-04-15
 Completely rewritten mode selection code - its now bit based, and much easier
 to read.
