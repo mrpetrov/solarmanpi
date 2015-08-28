@@ -15,7 +15,7 @@
 * The daemon is controlled via its configuration file, which if need be - can
 * be requested to be re-read while running. This is done by sending SIGUSR1
 * signal to the daemon process. The event is noted in the log file.
-* The logfile itself can be "grep"-ed for "ALARM" to catch and notify of
+* The logfile itself can be "grep"-ed for "ALARM:" to catch and notify of
 * notable events, recorded by the daemon.
 */
 
@@ -38,7 +38,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "1.9 2015-04-12"
+#define SOLARDVERSION    "2.1 2015-04-13"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -578,17 +578,17 @@ ReadSensors() {
         if ( new_val != -200 ) {
             if (sensor_read_errors) sensor_read_errors--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
-            if ((new_val < (sensors[i+5]-2))) {
+            if ((new_val < (sensors[i+5]-3))) {
                 sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
-                new_val, i+1, sensors[i+5]-2 );
+                new_val, i+1, sensors[i+5]-3 );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5]-2;
+                new_val = sensors[i+5]-3;
             }
-            if ((new_val > (sensors[i+5]+2))) {
+            if ((new_val > (sensors[i+5]+3))) {
                 sprintf( msg, " WARNING: Correcting HIGH %3.3f for sensor %d with %3.3f.",\
-                new_val, i+1, sensors[i+5]+2 );
+                new_val, i+1, sensors[i+5]+3 );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5]+2;
+                new_val = sensors[i+5]+3;
             }
             sensors[i+5] = sensors[i+1];
             sensors[i+1] = new_val;
@@ -602,10 +602,10 @@ ReadSensors() {
     if (sensor_read_errors>(12*TOTALSENSORS)){
         /* log the errors, clean up and bail out */
         if ( ! DisableGPIOpins() ) {
-            log_message(LOG_FILE, " ALARM Too many sensor errors! GPIO disable failed.");
+            log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed.");
             exit(5);
         }
-        log_message(LOG_FILE, " ALARM Too many sensor read errors! Stopping.");
+        log_message(LOG_FILE, " ALARM: Too many sensor read errors! Stopping.");
         exit(10);
     }
 }
@@ -752,9 +752,13 @@ SelectIdleMode() {
     No boiler heating is needed, so start with furnace pump off */
     ModeSelected = 0;
     /* Furnace is cold - turn pump on to keep it from freezing */
-    if (Tkotel < 6.9) ModeSelected = 5;
-    /* Furnace is above 30 and rising - turn pump on */
-    if ((Tkotel > 29.8)&&(Tkotel > TkotelPrev)) ModeSelected = 5;
+    if (Tkotel < 8.9) ModeSelected = 5;
+    /* Furnace is above 46 and rising - turn pump on */
+    if ((Tkotel > 45.8)&&(Tkotel > TkotelPrev)) ModeSelected = 5;
+    /* Furnace is above 38 and rising slowly - turn pump on */
+    if ((Tkotel > 37.8)&&(Tkotel > (TkotelPrev+0.12))) ModeSelected = 5;
+    /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
+    if ((Tkotel > 23.8)&&(Tkotel > (TkotelPrev+0.49))) ModeSelected = 5;
     /* If solar is 16 C hotter than furnace - turn both pumps on and open the valve */
     if ((Tkolektor > (Tkotel+15.9))&&(Tkolektor > TkolektorPrev)) ModeSelected = 6;
 
@@ -985,13 +989,13 @@ main(int argc, char *argv[])
 
     /* Enable GPIO pins */
     if ( ! EnableGPIOpins() ) {
-        log_message(LOG_FILE," ALARM Cannot enable GPIO! Aborting run.");
+        log_message(LOG_FILE," ALARM: Cannot enable GPIO! Aborting run.");
         return(1);
     }
 
     /* Set GPIO directions */
     if ( ! SetGPIODirection() ) {
-        log_message(LOG_FILE," ALARM Cannot set GPIO direction! Aborting run.");
+        log_message(LOG_FILE," ALARM: Cannot set GPIO direction! Aborting run.");
         return(2);
     }
 
