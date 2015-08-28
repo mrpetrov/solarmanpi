@@ -1,3 +1,18 @@
+2.5 2015-04-19
+Changed how electrical power used gets handled by solard - now we have two
+separate float variables TotalPowerUsed and NightlyPowerUsed which get updated
+at every call to ActivateHeatingMode() accordingly. Night tariff is hard-coded
+to between 23:00 and 06:59. The constants HEATERPPC, PUMPPPC, VAVLEPPC and
+SELFPPC have the watt-hour electrical power used for 10 seconds of operation
+for the electrical heater, pumps, valve and the Pi system itself.
+The human readable data log file is renamed to "/run/shm/solard_data.log". It
+now shows both power meters.
+The array ctrlstatecycles[] is back to 5 cells.
+BoilerHeating() adjusted to trigger if temperature Wanted > Previous > Current,
+if there is less than 0.3 C to the temp wanted. Also, it wont trigger if the
+colder end of the boiler is as hot as temp wanted.
+Electrical heater minimum off time is now 2 minutes.
+
 2.4 2015-04-18
 solard now records the electrical power used since started. This is done by
 growing ctrlstatecycles[] array to 6 cells where the sixth one is being used
