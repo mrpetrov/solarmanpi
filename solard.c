@@ -793,7 +793,7 @@ SelectIdleMode() {
     if ((Tkolektor > (TboilerHigh+6))&&(TboilerHigh < 52)) wantP2on = 1;
     /* If solar is 10 C hotter than furnace and we want to heat the house
     - turn both pumps on and open the valve */
-    if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
+    if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
     ((Tkolektor > (Tkotel+9.9))&&(Tkolektor > TkolektorPrev)) ) {
         wantP1on = 1;
         wantP2on = 1;
