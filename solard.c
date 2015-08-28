@@ -24,7 +24,8 @@
     # version 1.0
     # $date-id
 
-    # mode: 0=ALL OFF; 1=AUTO; 2=MANAUL PUMP1+HEATER; 3=MANUAL PUMP1 ONLY;
+    # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR;
+    #  3=MANAUL PUMP1+HEATER; 4=MANUAL PUMP1 ONLY; 5=MANUAL PUMP2 ONLY;
     mode=1
 
     # wanted_T: the desired temperature of water in tank
@@ -38,7 +39,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "2.1 2015-04-13"
+#define SOLARDVERSION    "2.2 2015-04-15"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -578,17 +579,17 @@ ReadSensors() {
         if ( new_val != -200 ) {
             if (sensor_read_errors) sensor_read_errors--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
-            if ((new_val < (sensors[i+5]-3))) {
+            if ((new_val < (sensors[i+5]-4))) {
                 sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
-                new_val, i+1, sensors[i+5]-3 );
+                new_val, i+1, sensors[i+5]-4 );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5]-3;
+                new_val = sensors[i+5]-4;
             }
-            if ((new_val > (sensors[i+5]+3))) {
+            if ((new_val > (sensors[i+5]+4))) {
                 sprintf( msg, " WARNING: Correcting HIGH %3.3f for sensor %d with %3.3f.",\
-                new_val, i+1, sensors[i+5]+3 );
+                new_val, i+1, sensors[i+5]+4 );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5]+3;
+                new_val = sensors[i+5]+4;
             }
             sensors[i+5] = sensors[i+1];
             sensors[i+1] = new_val;
@@ -708,6 +709,93 @@ LogData(int HM) {
     log_message(TABLE_FILE, msg);
 }
 
+short
+SelectIdleMode() {
+    short ModeSelected = 0;
+	short wantP1on = 0;
+	short wantP2on = 0;
+	short wantVon = 0;
+    /* If furnace is cold - turn pump on to keep it from freezing */
+    if (Tkotel < 8.9)
+    wantP1on = 1;
+    /* If solar is cold - turn pump on to keep it from freezing */
+    if (Tkolektor < 8.9)
+    wantP2on = 1;
+    /* Furnace is above 44 and rising - turn pump on */
+    if ((Tkotel > 43.8)&&(Tkotel > TkotelPrev))
+    wantP1on = 1;
+    /* Furnace is above 38 and rising slowly - turn pump on */
+    if ((Tkotel > 37.8)&&(Tkotel > (TkotelPrev+0.06)))
+    wantP1on = 1;
+    /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
+    if ((Tkotel > 23.8)&&(Tkotel > (TkotelPrev+0.18)))
+    wantP1on = 1;
+    /* If solar is 12 C hotter than furnace and we want to heat the house
+    - turn both pumps on and open the valve */
+	if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
+    ((Tkolektor > (Tkotel+11.9))&&(Tkolektor > TkolektorPrev)) ) {
+        wantP1on = 1;
+        wantP2on = 1;
+        wantVon = 1;
+    }
+	/* If furnace pump has been off for 7 days - turn it on for a while, to circulate fluid,
+    keep it in shape */
+    if ( (!CPump1) && (SCPump1 > 7*24*60*60) )
+    wantP1on = 1;
+	/* If solar pump has been off for 20 minutes - turn it on for a while, to circulate fluid */
+    if ( (!CPump2) && (SCPump2 > 6*20) )
+    wantP2on = 1;
+    if (solard_cfg.keep_pump1_on) wantP1on = 1;
+
+	if ( wantP1on ) ModeSelected |= 1;
+	if ( wantP2on ) ModeSelected |= 2;
+	if ( wantVon )  ModeSelected |= 4;
+    return ModeSelected;
+}
+
+short
+SelectHeatingMode() {
+    short ModeSelected = 0;
+	short wantP1on = 0;
+	short wantP2on = 0;
+	short wantVon = 0;
+	short wantHon = 0;
+
+    /* Do in main select routine what the idle routine would do + extra bits: */
+    ModeSelected = SelectIdleMode();
+
+    if ((Tkolektor > (TboilerHigh + 4.9))&&(Tkolektor > Tkotel)) {
+        /* To enable solar heating, solar out temp must be at least 5 C higher than the boiler */
+        wantP2on = 1;
+    }
+    else {
+        /* Not enough heat in the solar collector; check other sources of heat */
+        if (Tkotel > (TboilerHigh + 1.5)) {
+            /* The furnace is hot enough - use it */
+            wantP1on = 1;
+            wantVon = 1;
+            } else {
+            /* All is cold - use electric heater if possible */
+            wantHon = 1;
+        }
+    }
+
+	if ( wantP1on ) ModeSelected |= 1;
+	if ( wantP2on ) ModeSelected |= 2;
+	if ( wantVon )  ModeSelected |= 4;
+	if ( wantHon )  ModeSelected |= 8;
+    return ModeSelected;
+}
+
+void TurnPump1Off()  { if ((CPump1 && !CValve) && (SCPump1 > 5)) { CPump1  = 0; SCPump1 = 0; } }
+void TurnPump1On()   { if (!CPump1) { CPump1  = 1; SCPump1 = 0; } }
+void TurnPump2Off()  { if (CPump2 && (SCPump2 > 5)) { CPump2  = 0; SCPump2 = 0; } }
+void TurnPump2On()   { if (!CPump2) { CPump2  = 1; SCPump2 = 0; } }
+void TurnValveOff()  { if (CValve && (SCValve > 15)) { CValve  = 0; SCValve = 0; } }
+void TurnValveOn()   { if (!CValve) { CValve  = 1; SCValve = 0; } }
+void TurnHeaterOff() { if (CHeater) { CHeater = 0; SCHeater = 0; } }
+void TurnHeaterOn()  { if ((!CHeater) && (SCHeater > 5)) { CHeater = 1; SCHeater = 0; } }
+
 void
 RequestElectricHeat() {
     /* Do the check with config to see if its OK to use electric heater,
@@ -717,256 +805,50 @@ RequestElectricHeat() {
         if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) ||
         (current_timer_hour < solard_cfg.use_electric_stop_hour) ) {
             /* allowed time - if heater is off - turn it on */
-            if (!CHeater) { CHeater = 1; SCHeater = 0; }
-        }
-        else {
-            /* forbidden time - if heater is off - turn it off */
-            if (CHeater) { CHeater = 0; SCHeater = 0; }
+            TurnHeaterOn();
         }
         } else {
         /* heater allowed like from 05:00(5) to 07:00(6) - so use AND */
         if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) &&
         (current_timer_hour < solard_cfg.use_electric_stop_hour) ) {
             /* allowed time - if heater is off - turn it on */
-            if (!CHeater) { CHeater = 1; SCHeater = 0; }
-        }
-        else {
-            /* forbidden time - if heater is off - turn it off */
-            if (CHeater) { CHeater = 0; SCHeater = 0; }
+            TurnHeaterOn();
         }
     }
-}
-
-int
-SelectIdleMode() {
-    int ModeSelected;
-
-    /* Heating modes available:
-        0 - off
-        1 - idle/off - valve is closed, pump is as configured
-        2 - solar heating
-        3 - furnace heating
-        4 - electrical heating
-        5 - furnace pump on only
-        6 - both pumps on and valve open
-    No boiler heating is needed, so start with furnace pump off */
-    ModeSelected = 0;
-    /* Furnace is cold - turn pump on to keep it from freezing */
-    if (Tkotel < 8.9) ModeSelected = 5;
-    /* Furnace is above 46 and rising - turn pump on */
-    if ((Tkotel > 45.8)&&(Tkotel > TkotelPrev)) ModeSelected = 5;
-    /* Furnace is above 38 and rising slowly - turn pump on */
-    if ((Tkotel > 37.8)&&(Tkotel > (TkotelPrev+0.12))) ModeSelected = 5;
-    /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
-    if ((Tkotel > 23.8)&&(Tkotel > (TkotelPrev+0.49))) ModeSelected = 5;
-    /* If solar is 16 C hotter than furnace - turn both pumps on and open the valve */
-    if ((Tkolektor > (Tkotel+15.9))&&(Tkolektor > TkolektorPrev)) ModeSelected = 6;
-
-    return ModeSelected;
-}
-
-int
-SelectHeatingMode() {
-    int ModeSelected;
-
-    /* Heating modes available:
-        0 - off
-        1 - idle/off - valve is closed, pump is as configured
-        2 - solar heating
-        3 - furnace heating
-        4 - electrical heating
-        5 - furnace pump on only
-        6 - both pumps on and valve open
-    Initialize for idling */
-    ModeSelected = 1;
-    if ((Tkolektor > (TboilerHigh + 4.9))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, solar out temp must be at least 8 degrees higher than the boiler at its cold end */
-        ModeSelected = 2;
-        } else {
-        /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerHigh + 1.5)) {
-        /* The furnace is hot enough - use it */
-        ModeSelected = 3;
-        } else {
-        /* All is cold - use electric heater if possible */
-        ModeSelected = 4;
-    }
-    }
-    return ModeSelected;
 }
 
 void
-ActivateHeatingMode(const int HeatMode) {
+ActivateHeatingMode(const short HeatMode) {
     char current_state = 0;
     char new_state = 0;
 
     /* calculate current state */
-    if ( CPump1 ) current_state = 8;
-    if ( CPump2 ) current_state += 4;
-    if ( CValve ) current_state += 2;
-    if ( CHeater ) current_state += 1;
+    if ( CPump1 ) current_state |= 1;
+    if ( CPump2 ) current_state |= 2;
+    if ( CValve ) current_state |= 4;
+    if ( CHeater ) current_state |= 8;
     /* make changes as needed */
-    switch(HeatMode) {
-        case 0: /* Manual mode for ALL OFF */
-        if (CPump1 && (SCPump1 > 5)) {
-            CPump1  = 0;
-            SCPump1 = 0;
-        }
-        if (CPump2 && (SCPump2 > 3)) {
-            CPump2  = 0;
-            SCPump2 = 0;
-        }
-        if (CValve && (SCValve > 15)) {
-            CValve  = 0;
-            SCValve = 0;
-        }
-        if (CHeater) {
-            CHeater  = 0;
-            SCHeater = 0;
-        }
-        break;
-        default:
-        case 1: /* All OFF except furnace pump - its config file defined */
-        if ((CPump1 != solard_cfg.keep_pump1_on )&&(SCPump1 > 5)) {
-            CPump1  = solard_cfg.keep_pump1_on;
-            SCPump1 = 0;
-        }
-        if (CPump2 && (SCPump2 > 3)) {
-            CPump2  = 0;
-            SCPump2 = 0;
-        }
-        if (CValve && (SCValve > 15)) {
-            CValve  = 0;
-            SCValve = 0;
-        }
-        if (CHeater) {
-            CHeater  = 0;
-            SCHeater = 0;
-        }
-        break;
-        case 2: /* Solar heating
-        There is enough temp diff, so turn solar pump on, so heat gets into boiler */
-        if (!CPump2) {
-            CPump2  = 1;
-            SCPump2 = 0;
-        }
-        if (CHeater) {
-            CHeater  = 0;
-            SCHeater = 0;
-        }
-        break;
-        case 3: /* Furnace heating
-        Open valve and turn pump ON, so heat gets into boiler */
-        if (!CPump1 && (SCPump1 > 3)) {
-            CPump1  = 1;
-            SCPump1 = 0;
-        }
-        if (CPump2 && (SCPump2 > 3)) {
-            CPump2  = 0;
-            SCPump2 = 0;
-        }
-        if (!CValve) {
-            CValve  = 1;
-            SCValve = 0;
-        }
-        if (CHeater) {
-            CHeater  = 0;
-            SCHeater = 0;
-        }
-        break;
-        case 4: /* Fall back to electrical heater
-        Use a subroutine to check if its allowed for use */
-        if ((CPump1 != solard_cfg.keep_pump1_on )&&(SCPump1 > 2)) {
-            CPump1  = solard_cfg.keep_pump1_on;
-            SCPump1 = 0;
-        }
-        if (CPump2 && (SCPump2 > 3)) {
-            CPump2  = 0;
-            SCPump2 = 0;
-        }
-        if (CValve && (SCValve > 10)) {
-            CValve  = 0;
-            SCValve = 0;
-        }
-        RequestElectricHeat();
-        break;
-        case 5: /* Furnace pump on for house heating */
-        if (!CPump1 && (SCPump1 > 3)) {
-            CPump1  = 1;
-            SCPump1 = 0;
-        }
-        if (CPump2 && (SCPump2 > 3)) {
-            CPump2  = 0;
-            SCPump2 = 0;
-        }
-        if (CValve && (SCValve > 15)) {
-            CValve  = 0;
-            SCValve = 0;
-        }
-        if (CHeater) {
-            CHeater  = 0;
-            SCHeater = 0;
-        }
-        break;
-        case 6: /* Both pumps and valve ON */
-        if (!CPump1 && (SCPump1 > 3)) {
-            CPump1  = 1;
-            SCPump1 = 0;
-        }
-        if (!CPump2 && (SCPump2 > 3)) {
-            CPump2  = 1;
-            SCPump2 = 0;
-        }
-        if (!CValve && (SCValve > 15)) {
-            CValve  = 1;
-            SCValve = 0;
-        }
-        if (CHeater) {
-            CHeater  = 0;
-            SCHeater = 0;
-        }
-        break;
-        case 11: /* Force all pumps off
-            Used to deal with Grundfoss UPS2 pumps blocking on switch to battery power
-            This forces the pumps OFF for one logging period (10 seconds),
-            so when the next period's decision is made - there will be a change
-        of state, and the pump will have started (if needs to be ON) */
-        if (CPump1) {
-            CPump1  = 0;
-            SCPump1 = 0;
-        }
-        if (CPump2) {
-            CPump2  = 0;
-            SCPump2 = 0;
-        }
-        break;
-        case 12: /* Manual mode for electrical heating + furnace pump
-        Force the electrical heater ON and respect pumps other settings */
-        if (!CPump1) {
-            CPump1  = 1;
-            SCPump1 = 0;
-        }
-        if (!CHeater) {
-            CHeater  = 1;
-            SCHeater = 0;
-        }
-        break;
-        case 13: /* Manual mode for furnace pump only */
-        if (!CPump1) {
-            CPump1  = 1;
-            SCPump1 = 0;
-        }
-        break;
-    }
+    /* HeatMode's bits describe the peripherals desired state:
+        bit 0  (1) - pump 1
+        bit 1  (2) - pump 2
+        bit 2  (4) - valve
+        bit 3  (8) - heater wanted
+        bit 4 (16) - heater forced */
+    if (HeatMode & 1)  { TurnPump1On(); } else { TurnPump1Off(); }
+    if (HeatMode & 2)  { TurnPump2On(); } else { TurnPump2Off(); }
+    if (HeatMode & 4)  { TurnValveOn(); } else { TurnValveOff(); }
+    if (HeatMode & 8)  { RequestElectricHeat(); }
+    if (HeatMode & 16) { TurnHeaterOn(); }
+    if ( !(HeatMode & 24) ) { TurnHeaterOff(); }
     SCPump1++;
     SCPump2++;
     SCValve++;
     SCHeater++;
     /* calculate desired new state */
-    if ( CPump1 ) new_state = 8;
-    if ( CPump2 ) new_state += 4;
-    if ( CValve ) new_state += 2;
-    if ( CHeater ) new_state += 1;
+    if ( CPump1 ) new_state |= 1;
+    if ( CPump2 ) new_state |= 2;
+    if ( CValve ) new_state |= 4;
+    if ( CHeater ) new_state |= 8;
     /* if current state and new state are different... */
     if ( current_state != new_state ) {
         /* then put state on GPIO pins - this prevents lots of toggling at every 10s decision */
@@ -974,13 +856,29 @@ ActivateHeatingMode(const int HeatMode) {
     }
 }
 
+void
+AdjustHeatingModeForBatteryPower(short HM) {
+    /* Check for power failure */
+    if ( CPowerByBattery != CPowerByBatteryPrev ) {
+        /* If we just switched to battery.. */
+        if ( CPowerByBattery ) {
+            /* turn everything OFF */
+            HM = 0;
+            log_message(LOG_FILE," WARNING: Switch to BATTERY POWER detected.");
+        }
+        else {
+            log_message(LOG_FILE," INFO: Powered by GRID now.");
+        }
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
-    /* set iter to its max value - make sure we get a clock reading upon start */
-    short int iter = 30;
-    short int AlarmRaised = 0;
-    int HeatingMode = 0;
+    /* set iter to its max value - makes sure we get a clock reading upon start */
+    short iter = 30;
+    short AlarmRaised = 0;
+    short HeatingMode = 0;
     struct timeval tvalBefore, tvalAfter;
 
     SetDefaultCfg();
@@ -1002,9 +900,10 @@ main(int argc, char *argv[])
     log_message(LOG_FILE," solard "SOLARDVERSION" now starting up...");
     log_message(LOG_FILE," Running in "RUNNING_DIR", config file "CONFIG_FILE );
     log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
+    log_message(LOG_FILE," writing table data for collectd to "TABLE_FILE );
 
     parse_config();
-    
+
     just_started = 1;
 
     do {
@@ -1018,14 +917,14 @@ main(int argc, char *argv[])
         iter++;
         ReadSensors();
         ReadExternalPower();
-        /* do what "mode" from CFG files tells - go to the LOG file to see used values */
+        /* do what "mode" from CFG files says - watch the LOG file to see used values */
         switch (solard_cfg.mode) {
             default:
-            case 0: /* manual ALL OFF mode */
+            case 0: /* 0=ALL OFF */
             HeatingMode = 0;
-            ActivateHeatingMode(HeatingMode);
             break;
-            case 1: /* automatic mode - tries to reach desired water temp efficiently */
+            case 1: /* 1=AUTO - tries to reach desired water temp efficiently */
+            case 2: /* 2=AUTO+HEAT HOUSE BY SOLAR - mode taken into account by SelectIdle() */
             if ( CriticalTempsFound() ) {
                 ActivateEmergencyHeatTransfer();
                 if ( !AlarmRaised ) {
@@ -1044,54 +943,26 @@ main(int argc, char *argv[])
                     /* No heating needed - decide how to idle */
                     HeatingMode = SelectIdleMode();
                 }
-                /* Check for power failure */
-                if ( CPowerByBattery != CPowerByBatteryPrev ) {
-                    /* If we just switched to battery.. */
-                    if ( CPowerByBattery ) {
-                        /* ..use mode 11 - forcefully turn off all pumps */
-                        HeatingMode = 11;
-                        log_message(LOG_FILE," WARNING: Switch to BATTERY POWER detected.");
-                    }
-                    else {
-                        log_message(LOG_FILE," WARNING: Powered by GRID now.");
-                    }
-                }
-                ActivateHeatingMode(HeatingMode);
+                /*AdjustHeatingModeForBatteryPower(HeatingMode);*/
             }
             break;
-            case 2: /* manual mode - furnace pump and heater power ON */
-            HeatingMode = 12;
+            case 3: /* 3=MANAUL PUMP1+HEATER - furnace pump and heater power ON */
+            HeatingMode = 17;
             /* But still manage pumps in case of power failure */
-            if ( CPowerByBattery != CPowerByBatteryPrev ) {
-                /* If we just switched to battery.. */
-                if ( CPowerByBattery ) {
-                    /* ..use mode 11 - forces all pumps OFF*/
-                    HeatingMode = 11;
-                    log_message(LOG_FILE," WARNING: Switch to BATTERY POWER detected.");
-                }
-                else {
-                    log_message(LOG_FILE," WARNING: Powered by GRID now.");
-                }
-            }
-            ActivateHeatingMode(HeatingMode);
+            /*AdjustHeatingModeForBatteryPower(HeatingMode);*/
             break;
-            case 3: /* manual mode - only furnace pump ON */
-            HeatingMode = 13;
+            case 4: /* 4=MANUAL PUMP1 ONLY - only furnace pump ON */
+            HeatingMode = 1;
             /* But still manage pumps in case of power failure */
-            if ( CPowerByBattery != CPowerByBatteryPrev ) {
-                /* If we just switched to battery.. */
-                if ( CPowerByBattery ) {
-                    /* ..use mode 11 - forces all pumps OFF*/
-                    HeatingMode = 11;
-                    log_message(LOG_FILE," WARNING: Switch to BATTERY POWER detected.");
-                }
-                else {
-                    log_message(LOG_FILE," WARNING: Powered by GRID now.");
-                }
-            }
-            ActivateHeatingMode(HeatingMode);
+            /*AdjustHeatingModeForBatteryPower(HeatingMode);*/
+            break;
+            case 5: /* 5=MANUAL PUMP2 ONLY - only solar pump ON */
+            HeatingMode = 2;
+            /* But still manage pumps in case of power failure */
+            /*AdjustHeatingModeForBatteryPower(HeatingMode);*/
             break;
         }
+        ActivateHeatingMode(HeatingMode);
         LogData(HeatingMode);
         if ( need_to_read_cfg ) {
             need_to_read_cfg = 0;
