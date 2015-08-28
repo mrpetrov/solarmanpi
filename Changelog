@@ -1,3 +1,15 @@
+3.2 2015-05-12
+Make solard shout-out on start-up if for whatever reason one of the required
+log files cannot be opened.
+MAX_TEMP_DIFF increased to 5 C - the allowed change in sensor value between
+reads.
+ReadSensors() now uses the previous sensor value data as current if the newly
+read is bigger or smaller than MAX_TEMP_DIFF*2(=10 C), and counts it as a
+sensor read error. This way one-off cases are handled way better, and system
+will eventually shut down if too much of these happen at once.
+Electric heater use will be prevented by AdjustHeatingModeForBatteryPower(HM)
+during grid power outages.
+
 3.1 2015-04-27
 Fixed a few syntax errors that were causing solard to behave annoyingly -
 human readable cycles calculations should be enclosed in braces, like so:
