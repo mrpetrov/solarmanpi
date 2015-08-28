@@ -785,10 +785,9 @@ SelectIdleMode() {
     if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
     /* Furnace is above 22 and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
-    /* Solar is above 60 and rising slowly - turn pump on for good */
-    if ((Tkolektor > 60)&&(Tkolektor > (TkolektorPrev+0.12))) wantP2on = 1;
-    /* Solar is above 40 and rising QUICKLY - turn pump on for good */
-    if ((Tkolektor > 40)&&(Tkolektor > (TkolektorPrev+0.24))) wantP2on = 1;
+    /* Solar has heat in excess - rise boiler temp to 52 C so expensive sources 
+    are not used later on during the day */
+    if ((Tkolektor > (TboilerHigh+6))&&(TboilerHigh < 52)) wantP2on = 1;
     /* If solar is 10 C hotter than furnace and we want to heat the house
     - turn both pumps on and open the valve */
     if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
