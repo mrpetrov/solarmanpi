@@ -1,3 +1,22 @@
+2.8 2015-04-23
+Removed unused #defines. Now got some solar logic in place - but until I
+get it installed, along with its pump - its all theoretical.
+Minimum electrical heater ON time introduced - 1 minute, this should lower the
+frequency of heater relay triggering when boiler temp is near desired and using
+electricity.
+Main loop now checks gettimeofday() for errors and if there is trouble -
+warnings are printed in the log file.
+Adjusted furnace pump always-on temp from 60 C to 52 C.
+Turn the Grundfoss UPS2 pump on every 4 hours - lets hope this will make it
+start right away when its asked to.
+Rearranged config file modes:
+    # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
+    # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANAUL PUMP1+HEATER
+Main loop now calls AdjustHeatingModeForBatteryPower(), but it will only
+log events - no turning things on or off.
+Tweaked parse_config() to allow 0 as hour for start and stop of electric power
+use.
+
 2.7 2015-04-21
 Now printing the hard-coded constants for the power usage of all the used
 electrical consumers on start-up.
