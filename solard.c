@@ -41,7 +41,7 @@
     keep_pump1_on=0
 */
 
-#define SOLARDVERSION    "3.2 2015-05-12"
+#define SOLARDVERSION    "3.3 2015-08-28"
 
 #include <sys/stat.h>
 #include <sys/types.h>
