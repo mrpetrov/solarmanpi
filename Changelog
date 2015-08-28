@@ -1,3 +1,13 @@
+3.3 2015-08-28
+Enable PUMP2 (solar) operation.
+Lower solar pump idle time from 4 hours to 30 minutes during daytime.
+Remove rising temps from solar pump control logic - only make it try to 
+increase boiler temps to 52 C. Requires 6 C higher temps of solar when
+compared to boiler high temp.
+Make solar pump run in "pulses" - constant run is turned to 1 minute run time
+and 30 seconds pauses.
+Only activate furnace temp raising logic if outside is colder.
+
 3.2 2015-05-12
 Make solard shout-out on start-up if for whatever reason one of the required
 log files cannot be opened.
