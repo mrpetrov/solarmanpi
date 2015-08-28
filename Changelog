@@ -1,3 +1,17 @@
+2.1
+Furnace is being protected from freezing if its less than 9 C now.
+Changed is the idle mode pump control: now there are 3 stages; if furnace is
+hot (> 46 C) - even slight increase in temp will turn pump on; if furnace is
+warm (> 38 C) - there needs to be a 0.1 C increase to trigger pump on; and
+last - if furnace is cold, but warming quickly, e.i. > 24 C but increasing
+by 0.5 C per 10 seconds - the pump will be turned on. That way, we move
+mostly hot water in the house heating system, and protect the furnace from
+severe heating shocks.
+
+2.0
+Fix some printed texts and allow temp changes of maximum 3 C - it turns out
+that 2 C is too small for 10 seconds at times, so allow for a bit more.
+
 1.9
 ReadSensors() now makes corrections upon too wild data of max 2 C. It also
 is a lot more informative for the corrections in the log file.
