@@ -676,9 +676,7 @@ void
 ControlStateToGPIO() {
     /* put state on GPIO pins */
     GPIOWrite( PUMP1, CPump1 );
-    /* Do not physically change PUMP2 state - currently it is absent, so just log it
-        GPIOWrite( PUMP2, CPump2 );
-    */
+    GPIOWrite( PUMP2, CPump2 );
     GPIOWrite( VALVE, CValve );
     GPIOWrite( HEAT,  CHeater );
 }
