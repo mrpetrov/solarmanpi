@@ -1,3 +1,10 @@
+2.9 2015-04-24
+Fixed a bunch of text messages to be caught by the notification system.
+Improved the error case handling in several places throughout the file.
+To distinguish easier between heating mode and idle mode - in auto modes
+the main loop now logs idle modes as 32+ - actual bits remain the same,
+just an idle bit 6 (equals 32) is set.
+
 2.8 2015-04-23
 Removed unused #defines. Now got some solar logic in place - but until I
 get it installed, along with its pump - its all theoretical.
