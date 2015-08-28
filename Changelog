@@ -1,3 +1,16 @@
+3.0 2015-04-26
+Taught solard to keep track of current month and adjust the two variables
+holding the night tariff electricity rate start and stop hours. These
+variables get adjusted on program start and once every day between 8:00 and
+9:00 in GetCurrentTime(), which is called to get current hour every 5 minutes.
+It now stores the extracted month in a new global current_month variable.
+For the above to work - there is another new global variable introduced -
+ProgramRunCycles is an unsigned long, which stores the number of 10 second
+cycles that the program has been running since start, and its only
+increasing, so it will wrap around every 1362 years of run time ;)
+GetCurrentTime() will also log an "INFO" notice for monit to pick-up when
+it adjusts the night tariff hours.
+
 2.9 2015-04-24
 Fixed a bunch of text messages to be caught by the notification system.
 Improved the error case handling in several places throughout the file.
