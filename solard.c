@@ -1,22 +1,22 @@
 /*
-* solard.c
-*
-* Raspberry Pi solar manager which uses 1wire and GPIO.
-* Plamen Petrov <plamen.sisi@gmail.com>
-*
-* solard is Plamens's custom solar controller, based on the Raspberry Pi 2.
-* Data is gathered and logged every 10 seconds from 4 DS18B20 waterproof sensors,
-* controled are 4 relays via GPIO, and a GPIO pin is read for managing the power
-* to Grundfoss UPS2 pumps, which if left alone block on power switch to battery.
-* Remedy is to leave the pumps off for a couple of seconds on power failure (the
-* UPS switches to battery fine), and then turn the pump back on. Log data is in
-* CSV format, to be picked up by some sort of data collection/graphing tool, like
-* collectd or similar.
-* The daemon is controlled via its configuration file, which if need be - can
-* be requested to be re-read while running. This is done by sending SIGUSR1
-* signal to the daemon process. The event is noted in the log file.
-* The logfile itself can be "grep"-ed for "ALARM:" to catch and notify of
-* notable events, recorded by the daemon.
+    * solard.c
+    *
+    * Raspberry Pi solar manager which uses 1wire and GPIO.
+    * Plamen Petrov <plamen.sisi@gmail.com>
+    *
+    * solard is Plamens's custom solar controller, based on the Raspberry Pi 2.
+    * Data is gathered and logged every 10 seconds from 4 DS18B20 waterproof sensors,
+    * controled are 4 relays via GPIO, and a GPIO pin is read for managing the power
+    * to Grundfoss UPS2 pumps, which if left alone block on power switch to battery.
+    * Remedy is to leave the pumps off for a couple of seconds on power failure (the
+    * UPS switches to battery fine), and then turn the pump back on. Log data is in
+    * CSV format, to be picked up by some sort of data collection/graphing tool, like
+    * collectd or similar.
+    * The daemon is controlled via its configuration file, which if need be - can
+    * be requested to be re-read while running. This is done by sending SIGUSR1
+    * signal to the daemon process. The event is noted in the log file.
+    * The logfile itself can be "grep"-ed for "ALARM:" to catch and notify of
+    * notable events, recorded by the daemon.
 */
 
 /* example for /etc/solard.cfg config file (these are the DEFAULTS):
@@ -213,7 +213,7 @@ log_message(char *filename, char *message) {
     if ( !logfile ) return -1;
     fprintf( logfile, "%s\n", file_string );
     fclose( logfile );
-	return 0;
+    return 0;
 }
 
 /* this version of the logging function destroys the opened file contents */
@@ -607,27 +607,27 @@ ReadSensors() {
         if ( new_val != -200 ) {
             if (sensor_read_errors) sensor_read_errors--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
-            if ((new_val < ((sensors[i+5]-(2*MAX_TEMP_DIFF)))) {
+            if (new_val < (sensors[i+5]-(2*MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
-				sensor_read_errors++;
+                sensor_read_errors++;
             }
-            if ((new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF)))) {
+            if (new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
-				sensor_read_errors++;
+                sensor_read_errors++;
             }
-            if ((new_val < (sensors[i+5]-MAX_TEMP_DIFF))) {
+            if (new_val < (sensors[i+5]-MAX_TEMP_DIFF)) {
                 sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
                 new_val, i+1, sensors[i+5]-MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5]-MAX_TEMP_DIFF;
             }
-            if ((new_val > (sensors[i+5]+MAX_TEMP_DIFF))) {
+            if (new_val > (sensors[i+5]+MAX_TEMP_DIFF)) {
                 sprintf( msg, " WARNING: Correcting HIGH %3.3f for sensor %d with %3.3f.",\
                 new_val, i+1, sensors[i+5]+MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
@@ -690,7 +690,7 @@ write_log_start() {
     log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
     log_message(LOG_FILE," writing table data for collectd to "TABLE_FILE );
     sprintf( start_log_text, " powers: heater=%3.1f W, pump=%3.1f W, valve=%3.1f W, self=%3.1f W",\
-             HEATERPPC*(6*60), PUMPPPC*(6*60), VALVEPPC*(6*60), SELFPPC*(6*60) );
+    HEATERPPC*(6*60), PUMPPPC*(6*60), VALVEPPC*(6*60), SELFPPC*(6*60) );
     log_message(LOG_FILE, start_log_text );
 }
 
@@ -709,9 +709,9 @@ GetCurrentTime() {
     current_timer_hour = atoi( buff );
 
     /* adjust night tariff start and stop hours at program start and
-       every day sometime between 8:00 and 9:00 */
+    every day sometime between 8:00 and 9:00 */
     if ( ( just_started ) ||
-         ((current_timer_hour == 8) && ((ProgramRunCycles % (6*60)) == 0)) ) {
+    ((current_timer_hour == 8) && ((ProgramRunCycles % (6*60)) == 0)) ) {
         strftime( buff, sizeof buff, "%m", t_struct );
         current_month = atoi( buff );
         if ((current_month >= 4)&&(current_month <= 10)) {
@@ -732,7 +732,7 @@ GetCurrentTime() {
         }
         if (adjusted) {
             sprintf( buff, " INFO: adjusted night energy hours, start %.2hu:00,"\
-                          " stop %.2hu:59.", NEstart, NEstop );
+            " stop %.2hu:59.", NEstart, NEstop );
             log_message(LOG_FILE, buff);
         }
     }
@@ -743,7 +743,7 @@ BoilerHeatingNeeded() {
     if ( TboilerLow > ((float)solard_cfg.wanted_T + 1) ) return 0;
     if ( TboilerHigh < ((float)solard_cfg.wanted_T - 0.3) ) return 1;
     if ( (TboilerHigh < TboilerHighPrev) &&
-         (TboilerHighPrev < (float)solard_cfg.wanted_T ) ) return 1;
+    (TboilerHighPrev < (float)solard_cfg.wanted_T ) ) return 1;
     return 0;
 }
 
@@ -751,7 +751,7 @@ void
 LogData(short HM) {
     static char data[280];
     /* Log data like so:
-    Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,HM,
+        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,HM,
     PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
     sprintf( data, ", %3.3f,%3.3f,%3.3f,%3.3f, %d,%d, %d,%d,%d,%d,%d, %3.3f,%3.3f",\
     Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, HM, CPump1,\
@@ -759,11 +759,11 @@ LogData(short HM) {
     log_message(DATA_FILE, data);
 
     sprintf( data, ",Temp1,%3.3f\n_,Temp2,%3.3f\n_,Temp3,%3.3f\n_,Temp4,%3.3f\n_"\
-                  ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n_"\
-                  ",TempWanted,%d\n_,ElectricityUsed,%lu\n_,ElectricityUsedNT,%lu",\
-                  Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
-                  CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T,\
-                  (long)TotalPowerUsed, (long)NightlyPowerUsed );
+    ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n_"\
+    ",TempWanted,%d\n_,ElectricityUsed,%lu\n_,ElectricityUsedNT,%lu",\
+    Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
+    CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T,\
+    (long)TotalPowerUsed, (long)NightlyPowerUsed );
     log_msg_ovr(TABLE_FILE, data);
 }
 
@@ -788,7 +788,7 @@ SelectIdleMode() {
         /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
         if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     }
-    /* Solar has heat in excess - rise boiler temp to 52 C so expensive sources 
+    /* Solar has heat in excess - rise boiler temp to 52 C so expensive sources
     are not used later on during the day */
     if ((Tkolektor > (TboilerHigh+6))&&(TboilerHigh < 52)) wantP2on = 1;
     /* If solar is 10 C hotter than furnace and we want to heat the house
@@ -834,10 +834,10 @@ SelectHeatingMode() {
 
     /* Then add to it main Select()'s stuff: */
     if ((Tkolektor > (TboilerHigh + 7.9))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, solar out temp must be at least 5 C higher than the boiler */
+        /* To enable solar heating, solar out temp must be at least 8 C higher than the boiler */
         wantP2on = 1;
-       /* If solar pump has been on for 1 minute - shut it down for a while */
-       if ( (CPump2) && (SCPump2 > 5) ) wantP2on = 0;
+        /* If solar pump has been on for 1 minute - shut it down for a while */
+        if ( (CPump2) && (SCPump2 > 5) ) wantP2on = 0;
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
@@ -850,7 +850,7 @@ SelectHeatingMode() {
         else {
             /* All is cold - use electric heater if possible */
             /* FIXME For now - only turn heater on if valve is fully closed,
-                because it runs with at least one pump */
+            because it runs with at least one pump */
             if (!CValve && (SCValve > 15)) wantHon = 1;
         }
     }
@@ -863,8 +863,8 @@ SelectHeatingMode() {
 }
 
 void TurnPump1Off()  { if (CPump1 && !CValve && (SCPump1 > 5) && (SCValve > 5))
-                                    { CPump1 = 0; SCPump1 = 0; } }
-void TurnPump1On()   { if (!CPump1) { CPump1  = 1; SCPump1 = 0; } }
+{ CPump1 = 0; SCPump1 = 0; } }
+void TurnPump1On()   { if (!CPump1) { CPump1 = 1; SCPump1 = 0; } }
 void TurnPump2Off()  { if (CPump2 && (SCPump2 > 5)) { CPump2  = 0; SCPump2 = 0; } }
 void TurnPump2On()   { if (!CPump2 && (SCPump2 > 2)) { CPump2  = 1; SCPump2 = 0; } }
 void TurnValveOff()  { if (CValve && (SCValve > 23)) { CValve  = 0; SCValve = 0; } }
@@ -883,7 +883,8 @@ RequestElectricHeat() {
             /* allowed time - if heater is off - turn it on */
             TurnHeaterOn();
         }
-        } else {
+    }
+    else {
         /* heater allowed like from 05:00(5) to 07:00(6) - so use AND */
         if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) &&
         (current_timer_hour < solard_cfg.use_electric_stop_hour) ) {
@@ -909,7 +910,7 @@ ActivateHeatingMode(const short HeatMode) {
         bit 1  (2) - pump 2
         bit 2  (4) - valve
         bit 3  (8) - heater wanted
-        bit 4 (16) - heater forced */
+    bit 4 (16) - heater forced */
     if (HeatMode & 1)  { TurnPump1On(); } else { TurnPump1Off(); }
     if (HeatMode & 2)  { TurnPump2On(); } else { TurnPump2Off(); }
     if (HeatMode & 4)  { TurnValveOn(); } else { TurnValveOff(); }
@@ -955,17 +956,22 @@ ActivateHeatingMode(const short HeatMode) {
 
 void
 AdjustHeatingModeForBatteryPower(short HM) {
-    /* Check for power failure */
+    /* Check for power source switch */
     if ( CPowerByBattery != CPowerByBatteryPrev ) {
         /* If we just switched to battery.. */
         if ( CPowerByBattery ) {
-            /* turn everything OFF */
-            /* HM = 0; */
             log_message(LOG_FILE," WARNING: Switch to BATTERY POWER detected.");
         }
         else {
             log_message(LOG_FILE," INFO: Powered by GRID now.");
         }
+    }
+    if ( CPowerByBattery ) {
+        /* When battery powered - electric heater does not work; do not try it */
+        HM &= ~(1 << 4);
+        HM &= ~(1 << 5);
+        /* enable quick heater turn off */
+        if (CHeater && (SCHeater < 12)) { SCHeater = 12; }
     }
 }
 
@@ -981,21 +987,21 @@ main(int argc, char *argv[])
     SetDefaultCfg();
 
     /* before main work starts - try to open the log files to write a new line
-       ...and SCREAM if there is trouble! */
-	if (log_message(LOG_FILE," ***\n")) {
-	  printf(" Cannot open the mandatory "LOG_FILE" file needed for operation!\n");
-	  exit(3);
-	}
-	if (log_message(DATA_FILE," ***\n")) {
-	  printf(" Cannot open the mandatory "DATA_FILE" file needed for operation!\n");
-	  exit(3);
-	}
-	if (log_message(TABLE_FILE," ***\n")) {
-	  printf(" Cannot open the mandatory "TABLE_FILE" file needed for operation!\n");
-	  exit(3);
-	}
+    ...and SCREAM if there is trouble! */
+    if (log_message(LOG_FILE," ***\n")) {
+        printf(" Cannot open the mandatory "LOG_FILE" file needed for operation!\n");
+        exit(3);
+    }
+    if (log_message(DATA_FILE," ***\n")) {
+        printf(" Cannot open the mandatory "DATA_FILE" file needed for operation!\n");
+        exit(3);
+    }
+    if (log_message(TABLE_FILE," ***\n")) {
+        printf(" Cannot open the mandatory "TABLE_FILE" file needed for operation!\n");
+        exit(3);
+    }
 
-	daemonize();
+    daemonize();
 
     /* Enable GPIO pins */
     if ( ! EnableGPIOpins() ) {
@@ -1100,10 +1106,10 @@ main(int argc, char *argv[])
         if ( gettimeofday( &tvalAfter, NULL ) ) {
             log_message(LOG_FILE," WARNING: error getting tvalAfter...");
             sleep( 5 );
-        } else {
-        /* ..and sleep for rest of the 10 seconds wait period */
-        usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
-        + tvalAfter.tv_usec) - tvalBefore.tv_usec));
+            } else {
+            /* ..and sleep for rest of the 10 seconds wait period */
+            usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
+            + tvalAfter.tv_usec) - tvalBefore.tv_usec));
         }
     } while (1);
 
