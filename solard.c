@@ -1098,11 +1098,12 @@ main(int argc, char *argv[])
         ActivateHeatingMode(HeatingMode);
         LogData(HeatingMode);
         ProgramRunCycles++;
+        if ( just_started ) { just_started = 0; }
         if ( need_to_read_cfg ) {
             need_to_read_cfg = 0;
+            just_started = 1;
             parse_config();
         }
-        if ( just_started ) { just_started = 0; }
         if ( gettimeofday( &tvalAfter, NULL ) ) {
             log_message(LOG_FILE," WARNING: error getting tvalAfter...");
             sleep( 5 );
