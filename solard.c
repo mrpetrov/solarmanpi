@@ -25,7 +25,7 @@
     # $date-id
 
     # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR;
-    #  3=MANAUL PUMP1+HEATER; 4=MANUAL PUMP1 ONLY; 5=MANUAL PUMP2 ONLY;
+    # mode: 3=MANAUL PUMP1+HEATER; 4=MANUAL PUMP1 ONLY; 5=MANUAL PUMP2 ONLY;
     mode=1
 
     # wanted_T: the desired temperature of water in tank
@@ -39,7 +39,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "2.2 2015-04-15"
+#define SOLARDVERSION    "2.4 2015-04-18"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -81,6 +81,9 @@
 
 #define POWER  25 /* P1-22 */
 
+/* Maximum difference allowed for data received from sensors between reads, C */
+#define MAX_TEMP_DIFF        4
+
 /* Number of all sensors to be used by the system */
 #define TOTALSENSORS         4
 
@@ -110,27 +113,29 @@ float sensors[9] = { -200, 10, 12, 20, 10, 10, 12, 20, 10 };
 #define   TboilerLowPrev        sensors[8]
 
 /* current controls state - e.g. set on last decision making */
-short controls[11] = { -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+short controls[7] = { -1, 0, 0, 0, 0, 0, 0 };
 
 /* and control name mappings */
 #define   CPump1                controls[1]
 #define   CPump2                controls[2]
 #define   CValve                controls[3]
 #define   CHeater               controls[4]
-#define   CPump1Prev            controls[5]
-#define   CPump2Prev            controls[6]
-#define   CValvePrev            controls[7]
-#define   CHeaterPrev           controls[8]
-#define   CPowerByBattery       controls[9]
-#define   CPowerByBatteryPrev   controls[10]
+#define   CPowerByBattery       controls[5]
+#define   CPowerByBatteryPrev   controls[6]
 
 /* controls state cycles - zeroed on change to state */
-long ctrlstatecycles[5] = { -1, 0, 0, 0, 0 };
+long ctrlstatecycles[6] = { -1, 0, 0, 0, 0, 0 };
 
 #define   SCPump1               ctrlstatecycles[1]
 #define   SCPump2               ctrlstatecycles[2]
 #define   SCValve               ctrlstatecycles[3]
 #define   SCHeater              ctrlstatecycles[4]
+#define   SCHeaterOnCycles      ctrlstatecycles[5]
+
+/* constant of Watts of electricity used per 10 secs */
+#define   POWERPERCYCLE         8.34
+/* my boiler uses 3kW per hour, so this is 0,00834 kWh per 10 seconds */
+/* this in W per 10 seconds is 8.34 W */
 
 struct structsolard_cfg
 {
@@ -155,11 +160,9 @@ unsigned short current_timer_hour = 0;
 
 short just_started = 0;
 
-/* FORWARD DECLARATIONS so functions can be used in preceeding ones */
-
-int
+/* FORWARD DECLARATIONS so functions can be used in preceding ones */
+short
 DisableGPIOpins();
-
 /* end of forward-declared functions */
 
 void
@@ -176,7 +179,7 @@ SetDefaultCfg() {
     solard_cfg.keep_pump1_on = 1;
 }
 
-static void
+void
 log_message(char *filename, char *message) {
     FILE *logfile;
     char msg[100];
@@ -195,7 +198,7 @@ log_message(char *filename, char *message) {
 }
 
 /* this version of the logging function destroys the opened file contents */
-static void
+void
 log_msg_ovr(char *filename, char *message) {
     FILE *logfile;
     char msg[100];
@@ -236,7 +239,7 @@ trim (char * s)
     return s;
 }
 
-static void
+void
 parse_config()
 {
     int i = 0;
@@ -308,7 +311,7 @@ parse_config()
     log_message(LOG_FILE, buff);
 }
 
-static int
+int
 GPIOExport(int pin)
 {
     char buffer[BUFFER_MAX];
@@ -327,7 +330,7 @@ GPIOExport(int pin)
     return(0);
 }
 
-static int
+int
 GPIOUnexport(int pin)
 {
     char buffer[BUFFER_MAX];
@@ -346,7 +349,7 @@ GPIOUnexport(int pin)
     return(0);
 }
 
-static int
+int
 GPIODirection(int pin, int dir)
 {
     static const char s_directions_str[]  = "in\0out";
@@ -370,7 +373,7 @@ GPIODirection(int pin, int dir)
     return(0);
 }
 
-static int
+int
 GPIORead(int pin)
 {
     char path[VALUE_MAX];
@@ -394,7 +397,7 @@ GPIORead(int pin)
     return(atoi(value_str));
 }
 
-static int
+int
 GPIOWrite(int pin, int value)
 {
     static const char s_values_str[] = "01";
@@ -430,7 +433,7 @@ GPIOWrite(int pin, int value)
     sys     0m0.050s
 */
 
-static float
+float
 sensorRead(const char* sensor)
 {
     char path[VALUE_MAX];
@@ -535,7 +538,7 @@ daemonize()
 }
 
 /* the following 3 functions RETURN 0 ON ERROR! (its to make the program nice to read) */
-int
+short
 EnableGPIOpins()
 {
     if (-1 == GPIOExport(PUMP1)) return 0;
@@ -546,7 +549,7 @@ EnableGPIOpins()
     return -1;
 }
 
-int
+short
 SetGPIODirection()
 {
     if (-1 == GPIODirection(PUMP1, OUT)) return 0;
@@ -557,7 +560,7 @@ SetGPIODirection()
     return -1;
 }
 
-int
+short
 DisableGPIOpins()
 {
     if (-1 == GPIOUnexport(PUMP1)) return 0;
@@ -579,17 +582,17 @@ ReadSensors() {
         if ( new_val != -200 ) {
             if (sensor_read_errors) sensor_read_errors--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
-            if ((new_val < (sensors[i+5]-4))) {
+            if ((new_val < (sensors[i+5]-MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
-                new_val, i+1, sensors[i+5]-4 );
+                new_val, i+1, sensors[i+5]-MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5]-4;
+                new_val = sensors[i+5]-MAX_TEMP_DIFF;
             }
-            if ((new_val > (sensors[i+5]+4))) {
+            if ((new_val > (sensors[i+5]+MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Correcting HIGH %3.3f for sensor %d with %3.3f.",\
-                new_val, i+1, sensors[i+5]+4 );
+                new_val, i+1, sensors[i+5]+MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5]+4;
+                new_val = sensors[i+5]+MAX_TEMP_DIFF;
             }
             sensors[i+5] = sensors[i+1];
             sensors[i+1] = new_val;
@@ -620,7 +623,7 @@ ReadExternalPower() {
 }
 
 /* Return non-zero value on critical condition found based on current data in sensors[] */
-int
+short
 CriticalTempsFound() {
     if (Tkotel >= 77) return 1;
     if (Tkolektor >= 88) return 2;
@@ -655,58 +658,32 @@ GetCurrentTime() {
     current_timer_hour = atoi( buff );
 }
 
-/* Function to open the valve, and start all pumps */
-void
-ActivateEmergencyHeatTransfer() {
-    /* first set controls[]' states */
-    CPump1 = 1;
-    CPump2 = 1;
-    CValve = 1;
-    CHeater = 0;
-    /* and then put state on GPIO pins */
-    ControlStateToGPIO();
-}
-
-int
+short
 BoilerHeatingNeeded() {
-    /* Calculate boiler temp as intermediary between the boiler hot and cold ends */
-    /* if ( ((TboilerLow + TboilerHigh) / 2) <= ((float) solard_cfg.wanted_T) ) return 1; */
     /* Check just the higher temp sensor to determine if boiler needs heating */
-    if ( TboilerHigh < (float) solard_cfg.wanted_T ) return 1;
+    if ( (TboilerHighPrev < (float) solard_cfg.wanted_T) &&
+         (TboilerHigh < (float) solard_cfg.wanted_T) ) return 1;
     else return 0;
 }
 
-static void
-LogData(int HM) {
-    char msg[100];
+void
+LogData(short HM) {
+    char msg[300];
+    long WattsUsed = (long)(((float)SCHeaterOnCycles)*POWERPERCYCLE);
     /* Log data like so:
         Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH,
-    BOILERTEMPWANTED,HM, PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY */
-    sprintf( msg, ", %3.3f,%3.3f,%3.3f,%3.3f, %d,%d, %d,%d,%d,%d,%d",\
+    BOILERTEMPWANTED,HM, PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY, WATTSUSED */
+    sprintf( msg, ", %3.3f,%3.3f,%3.3f,%3.3f, %d,%d, %d,%d,%d,%d,%d, %lu",\
     Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, HM,\
-    CPump1, CPump2, CValve, CHeater, CPowerByBattery );
+    CPump1, CPump2, CValve, CHeater, CPowerByBattery, WattsUsed );
     log_message(DATA_FILE, msg);
 
-    sprintf( msg, ",Temp1,%3.3f", Tkotel );
+    sprintf( msg, ",Temp1,%3.3f\n_,Temp2,%3.3f\n_,Temp3,%3.3f\n_,Temp4,%3.3f\n_"\
+                  ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_"\
+                  ",PoweredByBattery,%d\n_,TempWanted,%d\n_,ElectricityUsed,%lu",\
+                  Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
+                  CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T, WattsUsed );
     log_msg_ovr(TABLE_FILE, msg);
-    sprintf( msg, ",Temp2,%3.3f", Tkolektor );
-    log_message(TABLE_FILE, msg);
-    sprintf( msg, ",Temp3,%3.3f", TboilerHigh );
-    log_message(TABLE_FILE, msg);
-    sprintf( msg, ",Temp4,%3.3f", TboilerLow );
-    log_message(TABLE_FILE, msg);
-    sprintf( msg, ",Pump1,%d", CPump1 );
-    log_message(TABLE_FILE, msg);
-    sprintf( msg, ",Pump2,%d", CPump2 );
-    log_message(TABLE_FILE, msg);
-    sprintf( msg, ",Valve,%d", CValve );
-    log_message(TABLE_FILE, msg);
-    sprintf( msg, ",Heater,%d", CHeater );
-    log_message(TABLE_FILE, msg);
-    sprintf( msg, ",PoweredByBattery,%d", CPowerByBattery );
-    log_message(TABLE_FILE, msg);
-    sprintf( msg, ",TempWanted,%d", solard_cfg.wanted_T );
-    log_message(TABLE_FILE, msg);
 }
 
 short
@@ -716,35 +693,29 @@ SelectIdleMode() {
 	short wantP2on = 0;
 	short wantVon = 0;
     /* If furnace is cold - turn pump on to keep it from freezing */
-    if (Tkotel < 8.9)
-    wantP1on = 1;
+    if (Tkotel < 8.9) wantP1on = 1;
     /* If solar is cold - turn pump on to keep it from freezing */
-    if (Tkolektor < 8.9)
-    wantP2on = 1;
+    if (Tkolektor < 8.9) wantP2on = 1;
     /* Furnace is above 44 and rising - turn pump on */
-    if ((Tkotel > 43.8)&&(Tkotel > TkotelPrev))
-    wantP1on = 1;
+    if ((Tkotel > 43.8)&&(Tkotel > TkotelPrev)) wantP1on = 1;
     /* Furnace is above 38 and rising slowly - turn pump on */
-    if ((Tkotel > 37.8)&&(Tkotel > (TkotelPrev+0.06)))
-    wantP1on = 1;
+    if ((Tkotel > 37.8)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
     /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
-    if ((Tkotel > 23.8)&&(Tkotel > (TkotelPrev+0.18)))
-    wantP1on = 1;
+    if ((Tkotel > 23.8)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* If solar is 12 C hotter than furnace and we want to heat the house
     - turn both pumps on and open the valve */
 	if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
-    ((Tkolektor > (Tkotel+11.9))&&(Tkolektor > TkolektorPrev)) ) {
+    ((Tkolektor > (Tkotel+9.9))&&(Tkolektor > TkolektorPrev)) ) {
         wantP1on = 1;
         wantP2on = 1;
         wantVon = 1;
     }
 	/* If furnace pump has been off for 7 days - turn it on for a while, to circulate fluid,
     keep it in shape */
-    if ( (!CPump1) && (SCPump1 > 7*24*60*60) )
-    wantP1on = 1;
-	/* If solar pump has been off for 20 minutes - turn it on for a while, to circulate fluid */
-    if ( (!CPump2) && (SCPump2 > 6*20) )
-    wantP2on = 1;
+    if ( (!CPump1) && (SCPump1 > 7*24*60*6) ) wantP1on = 1;
+	/* If solar pump has been off for 4 hours during day time - turn it on for a while,
+	to circulate fluid */
+    if ( (!CPump2) && (SCPump2 > 4*60*6) && (current_timer_hour >= 5) ) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
 
 	if ( wantP1on ) ModeSelected |= 1;
@@ -761,10 +732,11 @@ SelectHeatingMode() {
 	short wantVon = 0;
 	short wantHon = 0;
 
-    /* Do in main select routine what the idle routine would do + extra bits: */
+    /* First get what the idle routine would do: */
     ModeSelected = SelectIdleMode();
 
-    if ((Tkolektor > (TboilerHigh + 4.9))&&(Tkolektor > Tkotel)) {
+    /* Then add to it main Select()'s stuff: */
+	if ((Tkolektor > (TboilerHigh + 4.9))&&(Tkolektor > Tkotel)) {
         /* To enable solar heating, solar out temp must be at least 5 C higher than the boiler */
         wantP2on = 1;
     }
@@ -774,7 +746,8 @@ SelectHeatingMode() {
             /* The furnace is hot enough - use it */
             wantP1on = 1;
             wantVon = 1;
-            } else {
+            } 
+		else {
             /* All is cold - use electric heater if possible */
             wantHon = 1;
         }
@@ -787,7 +760,7 @@ SelectHeatingMode() {
     return ModeSelected;
 }
 
-void TurnPump1Off()  { if ((CPump1 && !CValve) && (SCPump1 > 5)) { CPump1  = 0; SCPump1 = 0; } }
+void TurnPump1Off()  { if ((CPump1 && !CValve) && (SCPump1 > 5)) { CPump1 = 0; SCPump1 = 0; } }
 void TurnPump1On()   { if (!CPump1) { CPump1  = 1; SCPump1 = 0; } }
 void TurnPump2Off()  { if (CPump2 && (SCPump2 > 5)) { CPump2  = 0; SCPump2 = 0; } }
 void TurnPump2On()   { if (!CPump2) { CPump2  = 1; SCPump2 = 0; } }
@@ -844,6 +817,7 @@ ActivateHeatingMode(const short HeatMode) {
     SCPump2++;
     SCValve++;
     SCHeater++;
+    if (CHeater) SCHeaterOnCycles++;
     /* calculate desired new state */
     if ( CPump1 ) new_state |= 1;
     if ( CPump2 ) new_state |= 2;
@@ -926,7 +900,9 @@ main(int argc, char *argv[])
             case 1: /* 1=AUTO - tries to reach desired water temp efficiently */
             case 2: /* 2=AUTO+HEAT HOUSE BY SOLAR - mode taken into account by SelectIdle() */
             if ( CriticalTempsFound() ) {
-                ActivateEmergencyHeatTransfer();
+                /* ActivateEmergencyHeatTransfer(); */
+				/* Set HeatingMode bits for both pumps and valve */
+				HeatingMode = 7;
                 if ( !AlarmRaised ) {
                     log_message(LOG_FILE," ALARM: Activating emergency cooling!");
                     AlarmRaised = 1;
