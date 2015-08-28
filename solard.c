@@ -38,7 +38,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "1.8 2015-04-11"
+#define SOLARDVERSION    "1.9 2015-04-12"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -495,7 +495,7 @@ signal_handler(int sig)
         case SIGTERM:
         log_message(LOG_FILE, " Terminate signal caught. Stopping.");
         if ( ! DisableGPIOpins() ) { log_message(LOG_FILE, " Cannot disable GPIO! Quitting."); exit(4); }
-        log_message(LOG_FILE," Exitting normally. Bye, bye!");
+        log_message(LOG_FILE," Exiting normally. Bye, bye!");
         exit(0);
         break;
     }
@@ -578,15 +578,17 @@ ReadSensors() {
         if ( new_val != -200 ) {
             if (sensor_read_errors) sensor_read_errors--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
-            if ((new_val < (sensors[i+5]-3))) {
-                new_val = sensors[i+5]-3;
-                sprintf( msg, " WARNING: Correcting too low reading for sensor %d.", i+1 );
+            if ((new_val < (sensors[i+5]-2))) {
+                sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
+                new_val, i+1, sensors[i+5]-2 );
                 log_message(LOG_FILE, msg);
+                new_val = sensors[i+5]-2;
             }
-            if ((new_val > (sensors[i+5]+3))) {
-                new_val = sensors[i+5]+3;
-                sprintf( msg, " WARNING: Correcting too high reading for sensor %d.", i+1 );
+            if ((new_val > (sensors[i+5]+2))) {
+                sprintf( msg, " WARNING: Correcting HIGH %3.3f for sensor %d with %3.3f.",\
+                new_val, i+1, sensors[i+5]+2 );
                 log_message(LOG_FILE, msg);
+                new_val = sensors[i+5]+2;
             }
             sensors[i+5] = sensors[i+1];
             sensors[i+1] = new_val;
@@ -619,9 +621,9 @@ ReadExternalPower() {
 /* Return non-zero value on critical condition found based on current data in sensors[] */
 int
 CriticalTempsFound() {
-    if (Tkotel >= 85) return 1;
-    if (Tkolektor >= 90) return 2;
-    if (TboilerHigh >= 77) return 3;
+    if (Tkotel >= 77) return 1;
+    if (Tkolektor >= 88) return 2;
+    if (TboilerHigh >= 70) return 3;
     if (Tkolektor <= 4) return -1;
     return 0;
 }
@@ -706,30 +708,6 @@ LogData(int HM) {
     log_message(TABLE_FILE, msg);
 }
 
-int
-SelectIdleMode() {
-    int ModeSelected;
-
-    /* Heating modes available:
-        0 - off
-        1 - idle/off - valve is closed, pump is as configured
-        2 - solar heating
-        3 - furnace heating
-        4 - electrical heating
-        5 - furnace pump on only
-        6 - both pumps on and valve open
-    No boiler heating is needed, so start with furnace pump off */
-    ModeSelected = 1;
-    /* Furnace is cold - turn pump on to keep it from freezing */
-    if (Tkotel < 7.9) ModeSelected = 5;
-    /* Furnace is above 30 and rising - turn pump on */
-    if ((Tkotel > 29.8)&&(Tkotel > TkotelPrev)) ModeSelected = 5;
-    /* If solar is 16 C hotter than furnace - turn both pumps on and open the valve */
-    if ((Tkolektor > (Tkotel+15.9))&&(Tkolektor > TkolektorPrev)) ModeSelected = 6;
-
-    return ModeSelected;
-}
-
 void
 RequestElectricHeat() {
     /* Do the check with config to see if its OK to use electric heater,
@@ -760,6 +738,30 @@ RequestElectricHeat() {
 }
 
 int
+SelectIdleMode() {
+    int ModeSelected;
+
+    /* Heating modes available:
+        0 - off
+        1 - idle/off - valve is closed, pump is as configured
+        2 - solar heating
+        3 - furnace heating
+        4 - electrical heating
+        5 - furnace pump on only
+        6 - both pumps on and valve open
+    No boiler heating is needed, so start with furnace pump off */
+    ModeSelected = 0;
+    /* Furnace is cold - turn pump on to keep it from freezing */
+    if (Tkotel < 6.9) ModeSelected = 5;
+    /* Furnace is above 30 and rising - turn pump on */
+    if ((Tkotel > 29.8)&&(Tkotel > TkotelPrev)) ModeSelected = 5;
+    /* If solar is 16 C hotter than furnace - turn both pumps on and open the valve */
+    if ((Tkolektor > (Tkotel+15.9))&&(Tkolektor > TkolektorPrev)) ModeSelected = 6;
+
+    return ModeSelected;
+}
+
+int
 SelectHeatingMode() {
     int ModeSelected;
 
@@ -778,7 +780,7 @@ SelectHeatingMode() {
         ModeSelected = 2;
         } else {
         /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerHigh + 0.9)) {
+        if (Tkotel > (TboilerHigh + 1.5)) {
         /* The furnace is hot enough - use it */
         ModeSelected = 3;
         } else {
@@ -998,7 +1000,7 @@ main(int argc, char *argv[])
     log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
 
     parse_config();
-
+    
     just_started = 1;
 
     do {
@@ -1108,4 +1110,3 @@ main(int argc, char *argv[])
 }
 
 /* EOF */
-
