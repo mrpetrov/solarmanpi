@@ -39,7 +39,7 @@
     keep_pump1_on=1
 */
 
-#define SOLARDVERSION    "2.5 2015-04-19"
+#define SOLARDVERSION    "2.6 2015-04-20"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -667,7 +667,7 @@ GetCurrentTime() {
 
 short
 BoilerHeatingNeeded() {
-    if ( TboilerLow > (float)solard_cfg.wanted_T ) return 0;
+    if ( TboilerLow > ((float)solard_cfg.wanted_T + 1) ) return 0;
     if ( TboilerHigh < ((float)solard_cfg.wanted_T - 0.3) ) return 1;
     if ( (TboilerHigh < TboilerHighPrev) &&
          (TboilerHighPrev < (float)solard_cfg.wanted_T ) ) return 1;
@@ -704,13 +704,15 @@ SelectIdleMode() {
     if (Tkotel < 8.9) wantP1on = 1;
     /* If solar is cold - turn pump on to keep it from freezing */
     if (Tkolektor < 8.9) wantP2on = 1;
-    /* Furnace is above 44 and rising - turn pump on */
-    if ((Tkotel > 43.8)&&(Tkotel > TkotelPrev)) wantP1on = 1;
-    /* Furnace is above 38 and rising slowly - turn pump on */
-    if ((Tkotel > 37.8)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
-    /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
-    if ((Tkotel > 23.8)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
-    /* If solar is 12 C hotter than furnace and we want to heat the house
+    /* Furnace is above 60 - at these temps always run the pump */
+    if (Tkotel > 60) wantP1on = 1;
+    /* Furnace is above 45 and rising - turn pump on */
+    if ((Tkotel > 44.9)&&(Tkotel > TkotelPrev)) wantP1on = 1;
+    /* Furnace is above 36 and rising slowly - turn pump on */
+    if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
+    /* Furnace is above 22 and rising QUICKLY - turn pump on to limit furnace thermal shock */
+    if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
+    /* If solar is 10 C hotter than furnace and we want to heat the house
     - turn both pumps on and open the valve */
 	if ( (solard_cfg.mode=2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
     ((Tkolektor > (Tkotel+9.9))&&(Tkolektor > TkolektorPrev)) ) {
@@ -744,20 +746,22 @@ SelectHeatingMode() {
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-	if ((Tkolektor > (TboilerHigh + 4.9))&&(Tkolektor > Tkotel)) {
+	if ((Tkolektor > (TboilerHigh + 7.9))&&(Tkolektor > Tkotel)) {
         /* To enable solar heating, solar out temp must be at least 5 C higher than the boiler */
         wantP2on = 1;
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerHigh + 1.5)) {
+        if (Tkotel > (TboilerHigh + 3.9)) {
             /* The furnace is hot enough - use it */
             wantP1on = 1;
             wantVon = 1;
             }
 		else {
             /* All is cold - use electric heater if possible */
-            wantHon = 1;
+            /* FIXME For now - only turn heater on if valve is fully closed,
+                because it runs with at least one pump */
+            if (!CValve && (SCValve > 15)) wantHon = 1;
         }
     }
 
@@ -829,22 +833,22 @@ ActivateHeatingMode(const short HeatMode) {
     /* Calculate total and night tariff electrical power used here: */
     if ( CHeater ) {
         TotalPowerUsed += HEATERPPC;
-        if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += HEATERPPC; }
+        if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += HEATERPPC; }
     }
     if ( CPump1 ) {
         TotalPowerUsed += PUMPPPC;
-        if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += PUMPPPC; }
+        if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += PUMPPPC; }
     }
     if ( CPump2 ) {
         TotalPowerUsed += PUMPPPC;
-        if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += PUMPPPC; }
+        if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += PUMPPPC; }
     }
     if ( CValve ) {
         TotalPowerUsed += VALVEPPC;
-        if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += VALVEPPC; }
+        if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += VALVEPPC; }
     }
     TotalPowerUsed += SELFPPC;
-    if ( (current_timer_hour < 7) || (current_timer_hour > 22) ) { NightlyPowerUsed += SELFPPC; }
+    if ( (current_timer_hour < 6) || (current_timer_hour > 22) ) { NightlyPowerUsed += SELFPPC; }
 
     /* calculate desired new state */
     if ( CPump1 ) new_state |= 1;
