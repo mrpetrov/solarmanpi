@@ -810,7 +810,8 @@ SelectIdleMode() {
     if ( (!CPump1) && (SCPump1 > (6*60*4)) ) wantP1on = 1;
     /* If solar pump has been off for 20 minutes during day time - turn it on for a while,
     to circulate fluid */
-    if ( (!CPump2) && (SCPump2 > (6*20)) && (current_timer_hour >= 5) ) wantP2on = 1;
+    if ( (!CPump2) && (SCPump2 > (6*20)) && 
+         (current_timer_hour > 8) && (current_timer_hour < 20)) wantP2on = 1;
     /* If solar pump has been on for 1 minute - shut it down for a while */
     if ( (CPump2) && (SCPump2 > 5) ) wantP2on = 0;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
