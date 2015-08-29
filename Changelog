@@ -1,3 +1,6 @@
+Make SIGUSR1 also do solard take sensors data anew.
+Limit solar pump circulation to between 09:00 and 19:59.
+
 3.3 2015-08-28
 Enable PUMP2 (solar) operation.
 Lower solar pump idle time from 4 hours to 30 minutes during daytime.
