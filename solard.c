@@ -809,7 +809,7 @@ SelectIdleMode() {
     /* If solar pump has been off for 90 minutes during day time - turn it on for a while,
     to circulate fluid */
     if ( (!CPump2) && (SCPump2 > (6*90)) && 
-         (current_timer_hour > 8) && (current_timer_hour < 20)) wantP2on = 1;
+         (current_timer_hour > 9) && (current_timer_hour < 18)) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
