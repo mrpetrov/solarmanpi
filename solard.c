@@ -812,7 +812,7 @@ SelectIdleMode() {
          (current_timer_hour > 8) && (current_timer_hour < 20)) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
-    if (Tkolektor > 75) wantP2on = 0;
+    if (Tkolektor > 85) wantP2on = 0;
 
     if ( wantP1on ) ModeSelected |= 1;
     if ( wantP2on ) ModeSelected |= 2;
