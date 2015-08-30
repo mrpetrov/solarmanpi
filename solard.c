@@ -665,9 +665,7 @@ ReadExternalPower() {
 short
 CriticalTempsFound() {
     if (Tkotel >= 72) return 1;
-    if (Tkolektor >= 85) return 2;
     if (TboilerHigh >= 70) return 3;
-    if (Tkolektor <= 4) return -1;
     return 0;
 }
 
