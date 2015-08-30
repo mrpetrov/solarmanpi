@@ -788,11 +788,11 @@ SelectIdleMode() {
     }
     /* Solar has heat in excess - rise boiler temp to 52 C so expensive sources
     are not used later on during the day */
-    if ((Tkolektor > (TboilerHigh+10))&&(TboilerHigh < 52)) wantP2on = 1;
-    /* If solar is 10 C hotter than furnace and we want to heat the house
+    if ((Tkolektor > (TboilerHigh+15))&&(TboilerHigh < 52)) wantP2on = 1;
+    /* If solar is 20 C hotter than furnace and we want to heat the house
     - turn both pumps on and open the valve */
     if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
-    ((Tkolektor > (Tkotel+9.9))&&(Tkolektor > TkolektorPrev)) ) {
+    ((Tkolektor > (Tkotel+20))&&(Tkolektor > TkolektorPrev)) ) {
         wantP1on = 1;
         wantP2on = 1;
         wantVon = 1;
@@ -832,8 +832,8 @@ SelectHeatingMode() {
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-    if ((Tkolektor > (TboilerHigh + 8))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, solar out temp must be at least 8 C higher than the boiler */
+    if ((Tkolektor > (TboilerHigh + 12))&&(Tkolektor > Tkotel)) {
+        /* To enable solar heating, solar out temp must be at least 12 C higher than the boiler */
         wantP2on = 1;
     }
     else {
