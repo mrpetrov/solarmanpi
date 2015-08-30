@@ -812,8 +812,6 @@ SelectIdleMode() {
     to circulate fluid */
     if ( (!CPump2) && (SCPump2 > (6*30)) && 
          (current_timer_hour > 8) && (current_timer_hour < 20)) wantP2on = 1;
-    /* If solar pump has been on for 1 minute - shut it down for a while */
-    if ( (CPump2) && (SCPump2 > 5) ) wantP2on = 0;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
 
     if ( wantP1on ) ModeSelected |= 1;
@@ -837,8 +835,6 @@ SelectHeatingMode() {
     if ((Tkolektor > (TboilerHigh + 8))&&(Tkolektor > Tkotel)) {
         /* To enable solar heating, solar out temp must be at least 8 C higher than the boiler */
         wantP2on = 1;
-        /* If solar pump has been on for 1 minute - shut it down for a while */
-        if ( (CPump2) && (SCPump2 > 5) ) wantP2on = 0;
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
