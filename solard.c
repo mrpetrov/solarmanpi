@@ -39,6 +39,9 @@
 
     # this tells to default pump1 to ON in idles
     keep_pump1_on=0
+    
+    # control the use of solar pump
+    use_pump2=1
 */
 
 #define SOLARDVERSION    "3.4-dev 2015-08-29"
@@ -169,6 +172,8 @@ struct structsolard_cfg
     int     use_electric_stop_hour;
     char    keep_pump1_on_str[MAXLEN];
     int     keep_pump1_on;
+    char    use_pump2_str[MAXLEN];
+    int     use_pump2;
 }
 structsolard_cfg;
 
@@ -195,6 +200,8 @@ SetDefaultCfg() {
     solard_cfg.use_electric_stop_hour = 4;
     strcpy( solard_cfg.keep_pump1_on_str, "0");
     solard_cfg.keep_pump1_on = 0;
+    strcpy( solard_cfg.use_pump2_str, "1");
+    solard_cfg.use_pump2 = 1;
 }
 
 short
@@ -295,6 +302,8 @@ parse_config()
             strncpy (solard_cfg.use_electric_stop_hour_str, value, MAXLEN);
             else if (strcmp(name, "keep_pump1_on")==0)
             strncpy (solard_cfg.keep_pump1_on_str, value, MAXLEN);
+            else if (strcmp(name, "use_pump2")==0)
+            strncpy (solard_cfg.use_pump2_str, value, MAXLEN);
         }
         /* Close file */
         fclose (fp);
@@ -316,16 +325,19 @@ parse_config()
     strcpy( buff, solard_cfg.keep_pump1_on_str );
     i = atoi( buff );
     solard_cfg.keep_pump1_on = i;
+    strcpy( buff, solard_cfg.use_pump2_str );
+    i = atoi( buff );
+    solard_cfg.use_pump2 = i;
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d",\
+        sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
-        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on );
+        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2 );
         } else {
-        sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d",\
+        sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
-        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on );
+        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2 );
     }
     log_message(LOG_FILE, buff);
 }
