@@ -751,7 +751,7 @@ LogData(short HM) {
     /* Log data like so:
         Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,HM,
     PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
-    sprintf( data, ", %3.3f,%3.3f,%3.3f,%3.3f, %d,%d, %d,%d,%d,%d,%d, %3.3f,%3.3f",\
+    sprintf( data, ", %3.3f,%3.3f,%3.3f,%3.3f, %2d,%2d, %d,%d,%d,%d,%d, %3.3f,%3.3f",\
     Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, HM, CPump1,\
     CPump2, CValve, CHeater, CPowerByBattery, TotalPowerUsed, NightlyPowerUsed );
     log_message(DATA_FILE, data);
