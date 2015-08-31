@@ -31,11 +31,11 @@
     mode=1
 
     # wanted_T: the desired temperature of water in tank
-    wanted_T=46
+    wanted_T=40
 
     # these define allowed hours to use electric heat
     use_electric_start_hour=3
-    use_electric_stop_hour=6
+    use_electric_stop_hour=4
 
     # this tells to default pump1 to ON in idles
     keep_pump1_on=0
@@ -188,11 +188,11 @@ SetDefaultCfg() {
     strcpy( solard_cfg.mode_str, "1");
     solard_cfg.mode = 1;
     strcpy( solard_cfg.wanted_T_str, "46");
-    solard_cfg.wanted_T = 46;
+    solard_cfg.wanted_T = 40;
     strcpy( solard_cfg.use_electric_start_hour_str, "3");
     solard_cfg.use_electric_start_hour = 3;
-    strcpy( solard_cfg.use_electric_stop_hour_str, "6");
-    solard_cfg.use_electric_stop_hour = 6;
+    strcpy( solard_cfg.use_electric_stop_hour_str, "4");
+    solard_cfg.use_electric_stop_hour = 4;
     strcpy( solard_cfg.keep_pump1_on_str, "0");
     solard_cfg.keep_pump1_on = 0;
 }
