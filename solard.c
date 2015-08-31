@@ -187,7 +187,7 @@ void
 SetDefaultCfg() {
     strcpy( solard_cfg.mode_str, "1");
     solard_cfg.mode = 1;
-    strcpy( solard_cfg.wanted_T_str, "46");
+    strcpy( solard_cfg.wanted_T_str, "40");
     solard_cfg.wanted_T = 40;
     strcpy( solard_cfg.use_electric_start_hour_str, "3");
     solard_cfg.use_electric_start_hour = 3;
