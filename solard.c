@@ -39,7 +39,7 @@
 
     # this tells to default pump1 to ON in idles
     keep_pump1_on=0
-    
+
     # control the use of solar pump
     use_pump2=1
 */
