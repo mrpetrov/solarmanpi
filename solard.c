@@ -807,7 +807,7 @@ SelectIdleMode() {
     }
     /* Furnace has heat in excess - open the valve so boiler can build up
     heat now and probably save on electricity use later on */
-    if ((TboilerHigh > (float)solard_cfg.wanted_T)&&(Tkotel > (TboilerHigh+6))) {
+    if ((TboilerHigh > (float)solard_cfg.wanted_T)&&(Tkotel > (TboilerHigh+9.9))) {
         wantVon = 1;
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
@@ -846,7 +846,7 @@ SelectHeatingMode() {
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerHigh + 3.9)) {
+        if (Tkotel > (TboilerHigh + 9.9)) {
             /* The furnace is hot enough - use it */
             wantVon = 1;
             /* And if valve has been open for 2 minutes - turn furnace pump on */
