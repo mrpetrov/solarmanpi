@@ -129,7 +129,7 @@ short controls[7] = { -1, 0, 0, 0, 0, 0, 0 };
 #define   CPowerByBatteryPrev   controls[6]
 
 /* controls state cycles - zeroed on change to state */
-long ctrlstatecycles[5] = { -1, 1500, 1500, 22, 22 };
+long ctrlstatecycles[5] = { -1, 150000, 150000, 2200, 2200 };
 
 #define   SCPump1               ctrlstatecycles[1]
 #define   SCPump2               ctrlstatecycles[2]
@@ -816,8 +816,8 @@ SelectIdleMode() {
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
     }
-    /* Try to keep Grundfoss UPS2 pump dandy - turn it on every 4 hours */
-    if ( (!CPump1) && (SCPump1 > (6*60*4)) ) wantP1on = 1;
+    /* Try to keep Grundfoss UPS2 pump dandy - turn it on every 48 hours */
+    if ( (!CPump1) && (SCPump1 > (6*60*48)) ) wantP1on = 1;
     /* If solar pump has been off for 90 minutes during day time - turn it on for a while,
     to circulate fluid */
     if ( (!CPump2) && (SCPump2 > (6*90)) &&
