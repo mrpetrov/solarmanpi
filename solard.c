@@ -798,12 +798,11 @@ SelectIdleMode() {
     /* Solar has heat in excess - rise boiler temp to 56 C so expensive sources
     are not used later on during the day */
     if ((Tkolektor > (TboilerHigh+15))&&(TboilerHigh < 56)) wantP2on = 1;
-    /* If solar is 20 C hotter than furnace and we want to heat the house
-    - turn both pumps on and open the valve */
+    /* Try to heat the house by taking heat from boiler but leave at least 5 C extra on
+    top of the wanted temp - turn furnace pump on and open the valve */
     if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
-    ((Tkolektor > (Tkotel+20))&&(Tkolektor > TkolektorPrev)) ) {
+    (TboilerHigh > ((float)solard_cfg.wanted_T + 5)) && (TboilerLow > Tkotel) ) {
         wantP1on = 1;
-        wantP2on = 1;
         wantVon = 1;
     }
     /* Furnace has heat in excess - open the valve so boiler can build up
