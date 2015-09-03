@@ -42,7 +42,7 @@
 
     # control the use of solar pump
     use_pump2=1
-    
+
     # day of month to reset power used counters
     day_to_reset_Pcounters=7
 */
@@ -371,7 +371,7 @@ WritePersistentPower() {
     fprintf( logfile, "# solard power persistence file written %s\n", timestamp );
     fprintf( logfile, "total=%3.3f\n", TotalPowerUsed );
     fprintf( logfile, "nightly=%3.3f\n", NightlyPowerUsed );
-    fclose( logfile );    
+    fclose( logfile );
 }
 
 void
@@ -1139,7 +1139,7 @@ main(int argc, char *argv[])
     just_started = 1;
     TotalPowerUsed = 0;
     NightlyPowerUsed = 0;
-    
+
     ReadPersistentPower();
 
     do {
