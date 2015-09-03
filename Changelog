@@ -1,5 +1,53 @@
-Make SIGUSR1 also do solard take sensors data anew.
-Limit solar pump circulation to between 09:00 and 19:59.
+3.4 2015-09-03
+Summary: two new config options - "use_pump2" and "day_to_reset_Pcounters".
+First controls the use of pump2 - solar pump - and should be used to
+safely pump operation - for example if a maintenance needs to be carried
+out.
+Second one controls which day of the month the now persistent power usage
+counters get reset - by default every 7-nth day of month.
+All else is mostly tweaking of deltas, limits, etc.
+Auto mode 2 now actually knows furnace HTF and solar HTF are separate.
+
+Shortlog:
+Make SIGUSR1 also do solard take sensors data anew
+Limit solar pump circulation to between 09:00 and 19:59
+Show in-between version as a star *
+Show version as development one
+Update Changelog
+Lower solar pump minimum run time to 30 seconds
+Increase solar pump day idle stretches to 30 minutes
+Solar diffs required changed: idle - 10 C, heating - 8 C
+Remove solar pump forced pauses …
+Do not care about solar collector critical temps …
+Introduce upper temp limit 75 C on solar pump idle operation
+Raise ECT collector upper limit to 85 C …
+Increase solar temp diffs - heat: 12 C, idle: 15 C, house heating: 20 C
+Increase allowed solar pump idle time to 90 minutes
+Change schedule for forced solar pump runs to 10:00 to 17:59
+Fix some whitespace problem
+Fix data logfile spacing so that the columns don't break
+Tweak default config values: T 40 C, EStart 3, EStop 4, pump1 off
+Tweak default config values: T 40 C, EStart 3, EStop 4, pump1 off
+Introduce new config option "use_pump2" with default state "ON" …
+Fix whitespace
+Increase allowed boiler temp in "harvest" solar mode to 56 C
+Tweak daily forced solar pump runs to between 11:00 and 16:59 …
+Make config option "use_pump2" do what its meant to do
+Increase period between furnace pump runs to 48 hours and fix initial… …
+Restore furnace pump function but require at least two steps of senso… …
+Change auto mode 2 to take heat from boiler to heat house, leaving at… …
+Allow solar tubes to heat boiler up to 62 C
+Evacuated tube collectors (ETC) are more efficient at higer deltas - … …
+Increase deltas required to heat boiler by furnace to 10 C
+Make solard reset power used counters monthly - configured via "day_t… …
+Make power used counter persistent between program restarts …
+Remove a couple of unused vars left in previous commit by mistake
+Fix creating missing power data persistence file
+Fix compile warnings
+Make persistent power read function a bit more bullet-proof
+Write persistent power usage data every 10 minutes
+Revert back ECT delta required to 15 C …
+Fix whitespace
 
 3.3 2015-08-28
 Enable PUMP2 (solar) operation.
