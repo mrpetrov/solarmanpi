@@ -361,9 +361,11 @@ ReadPersistentPower() {
     char *s, buff[150];
     char totalP_str[MAXLEN];
     char nightlyP_str[MAXLEN];
+    short should_write=0;
     FILE *fp = fopen(POWER_FILE, "r");
     if (fp == NULL) {
         log_message(LOG_FILE," WARNING: Failed to open "POWER_FILE" file for reading!");
+        should_write = 1;
         } else {
         /* Read next line */
         while ((s = fgets (buff, sizeof buff, fp)) != NULL)
@@ -392,13 +394,19 @@ ReadPersistentPower() {
         fclose (fp);
     }
 
-    /* Convert strings to float */
-    strcpy( buff, totalP_str );
-    f = atof( buff );
-    TotalPowerUsed = f;
-    strcpy( buff, nightlyP_str );
-    f = atof( buff );
-    NightlyPowerUsed = f;
+    if (should_write) {
+        log_message(LOG_FILE, " Creating missing power persistence data file...");
+        WritePersistentPower();
+    }
+    else {
+        /* Convert strings to float */
+        strcpy( buff, totalP_str );
+        f = atof( buff );
+        TotalPowerUsed = f;
+        strcpy( buff, nightlyP_str );
+        f = atof( buff );
+        NightlyPowerUsed = f;
+    }
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
