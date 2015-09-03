@@ -381,6 +381,8 @@ ReadPersistentPower() {
     char totalP_str[MAXLEN];
     char nightlyP_str[MAXLEN];
     short should_write=0;
+    strcpy( totalP_str, "0" );
+    strcpy( nightlyP_str, "0" );
     FILE *fp = fopen(POWER_FILE, "r");
     if (fp == NULL) {
         log_message(LOG_FILE," WARNING: Failed to open "POWER_FILE" file for reading!");
