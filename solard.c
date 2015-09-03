@@ -356,6 +356,25 @@ parse_config()
 }
 
 void
+WritePersistentPower() {
+    FILE *logfile;
+    char timestamp[30];
+    time_t t;
+    struct tm *t_struct;
+
+    t = time(NULL);
+    t_struct = localtime( &t );
+    strftime( timestamp, sizeof timestamp, "%F %T", t_struct );
+
+    logfile = fopen( POWER_FILE, "w" );
+    if ( !logfile ) return;
+    fprintf( logfile, "# solard power persistence file written %s\n", timestamp );
+    fprintf( logfile, "total=%3.3f\n", TotalPowerUsed );
+    fprintf( logfile, "nightly=%3.3f\n", NightlyPowerUsed );
+    fclose( logfile );    
+}
+
+void
 ReadPersistentPower() {
     float f = 0;
     char *s, buff[150];
@@ -417,25 +436,6 @@ ReadPersistentPower() {
         TotalPowerUsed, NightlyPowerUsed );
     }
     log_message(LOG_FILE, buff);
-}
-
-void
-WritePersistentPower() {
-    FILE *logfile;
-    char timestamp[30];
-    time_t t;
-    struct tm *t_struct;
-
-    t = time(NULL);
-    t_struct = localtime( &t );
-    strftime( timestamp, sizeof timestamp, "%F %T", t_struct );
-
-    logfile = fopen( POWER_FILE, "w" );
-    if ( !logfile ) return;
-    fprintf( logfile, "# solard power persistence file written %s\n", timestamp );
-    fprintf( logfile, "total=%3.3f\n", TotalPowerUsed );
-    fprintf( logfile, "nightly=%3.3f\n", NightlyPowerUsed );
-    fclose( logfile );    
 }
 
 int
