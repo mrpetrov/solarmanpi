@@ -68,6 +68,7 @@
 #define DATA_FILE       "/run/shm/solard_data.log"
 #define TABLE_FILE      "/run/shm/solard_current"
 #define CONFIG_FILE     "/etc/solard.cfg"
+#define POWER_FILE      "/var/log/solard_power"
 
 #define BUFFER_MAX 3
 #define DIRECTION_MAX 35
@@ -352,6 +353,83 @@ parse_config()
         solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
     }
     log_message(LOG_FILE, buff);
+}
+
+void
+ReadPersistentPower() {
+    int i = 0;
+    float f = 0;
+    char *s, buff[150];
+    char totalP_str[MAXLEN];
+    char nightlyP_str[MAXLEN];
+    FILE *fp = fopen(POWER_FILE, "r");
+    if (fp == NULL) {
+        log_message(LOG_FILE," WARNING: Failed to open "POWER_FILE" file for reading!");
+        } else {
+        /* Read next line */
+        while ((s = fgets (buff, sizeof buff, fp)) != NULL)
+        {
+            /* Skip blank lines and comments */
+            if (buff[0] == '\n' || buff[0] == '#')
+            continue;
+
+            /* Parse name/value pair from line */
+            char name[MAXLEN], value[MAXLEN];
+            s = strtok (buff, "=");
+            if (s==NULL) continue;
+            else strncpy (name, s, MAXLEN);
+            s = strtok (NULL, "=");
+            if (s==NULL) continue;
+            else strncpy (value, s, MAXLEN);
+            trim (value);
+
+            /* Copy data in corresponding strings */
+            if (strcmp(name, "total")==0)
+            strncpy (totalP_str, value, MAXLEN);
+            else if (strcmp(name, "nightly")==0)
+            strncpy (nightlyP_str, value, MAXLEN);
+        }
+        /* Close file */
+        fclose (fp);
+    }
+
+    /* Convert strings to float */
+    strcpy( buff, totalP_str );
+    f = atof( buff );
+    TotalPowerUsed = f;
+    strcpy( buff, nightlyP_str );
+    f = atof( buff );
+    NightlyPowerUsed = f;
+
+    /* Prepare log message and write it to log file */
+    if (fp == NULL) {
+        sprintf( buff, " INFO: Using power counters start values: Total=%3.3f, Nightly=%3.3f",
+        TotalPowerUsed, NightlyPowerUsed );
+        } else {
+        sprintf( buff, " INFO: Read power counters start values: Total=%3.3f, Nightly=%3.3f",
+        TotalPowerUsed, NightlyPowerUsed );
+    }
+    log_message(LOG_FILE, buff);
+}
+
+void
+WritePersistentPower() {
+    FILE *logfile;
+    char file_string[300];
+    char timestamp[30];
+    time_t t;
+    struct tm *t_struct;
+
+    t = time(NULL);
+    t_struct = localtime( &t );
+    strftime( timestamp, sizeof timestamp, "%F %T", t_struct );
+
+    logfile = fopen( POWER_FILE, "w" );
+    if ( !logfile ) return;
+    fprintf( logfile, "# solard power persistence file written %s\n", timestamp );
+    fprintf( logfile, "total=%3.3f\n", TotalPowerUsed );
+    fprintf( logfile, "nightly=%3.3f\n", NightlyPowerUsed );
+    fclose( logfile );    
 }
 
 int
@@ -711,6 +789,7 @@ write_log_start() {
     log_message(LOG_FILE," Running in "RUNNING_DIR", config file "CONFIG_FILE );
     log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
     log_message(LOG_FILE," writing table data for collectd to "TABLE_FILE );
+    log_message(LOG_FILE," power used persistence file "POWER_FILE );
     sprintf( start_log_text, " powers: heater=%3.1f W, pump=%3.1f W, valve=%3.1f W, self=%3.1f W",\
     HEATERPPC*(6*60), PUMPPPC*(6*60), VALVEPPC*(6*60), SELFPPC*(6*60) );
     log_message(LOG_FILE, start_log_text );
@@ -1009,6 +1088,7 @@ main(int argc, char *argv[])
 {
     /* set iter to its max value - makes sure we get a clock reading upon start */
     short iter = 30;
+    short iter_P = 0;
     short AlarmRaised = 0;
     short HeatingMode = 0;
     struct timeval tvalBefore, tvalAfter;
@@ -1051,6 +1131,8 @@ main(int argc, char *argv[])
     just_started = 1;
     TotalPowerUsed = 0;
     NightlyPowerUsed = 0;
+    
+    ReadPersistentPower();
 
     do {
         /* Do all the important stuff... */
@@ -1061,6 +1143,12 @@ main(int argc, char *argv[])
         if ( iter == 30 ) {
             iter = 0;
             GetCurrentTime();
+            /* and increase counter controlling writing out persitent power use data */
+            iter_P++;
+            if ( iter_P == 6) {
+                iter_P = 0;
+                WritePersistentPower();
+            }
         }
         iter++;
         ReadSensors();
