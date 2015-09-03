@@ -47,7 +47,7 @@
     day_to_reset_Pcounters=7
 */
 
-#define SOLARDVERSION    "3.4-dev 2015-08-29"
+#define SOLARDVERSION    "3.4 2015-09-03"
 
 #include <sys/stat.h>
 #include <sys/types.h>
