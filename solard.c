@@ -357,7 +357,6 @@ parse_config()
 
 void
 ReadPersistentPower() {
-    int i = 0;
     float f = 0;
     char *s, buff[150];
     char totalP_str[MAXLEN];
@@ -415,7 +414,6 @@ ReadPersistentPower() {
 void
 WritePersistentPower() {
     FILE *logfile;
-    char file_string[300];
     char timestamp[30];
     time_t t;
     struct tm *t_struct;
