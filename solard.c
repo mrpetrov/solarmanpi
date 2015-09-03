@@ -42,6 +42,9 @@
 
     # control the use of solar pump
     use_pump2=1
+    
+    # day of month to reset power used counters
+    day_to_reset_Pcounters=7
 */
 
 #define SOLARDVERSION    "3.4-dev 2015-08-29"
@@ -174,6 +177,8 @@ struct structsolard_cfg
     int     keep_pump1_on;
     char    use_pump2_str[MAXLEN];
     int     use_pump2;
+    char    day_to_reset_Pcounters_str[MAXLEN];
+    int     day_to_reset_Pcounters;
 }
 structsolard_cfg;
 
@@ -202,6 +207,8 @@ SetDefaultCfg() {
     solard_cfg.keep_pump1_on = 0;
     strcpy( solard_cfg.use_pump2_str, "1");
     solard_cfg.use_pump2 = 1;
+    strcpy( solard_cfg.day_to_reset_Pcounters_str, "7");
+    solard_cfg.day_to_reset_Pcounters = 7;
 }
 
 short
@@ -304,6 +311,8 @@ parse_config()
             strncpy (solard_cfg.keep_pump1_on_str, value, MAXLEN);
             else if (strcmp(name, "use_pump2")==0)
             strncpy (solard_cfg.use_pump2_str, value, MAXLEN);
+            else if (strcmp(name, "day_to_reset_Pcounters")==0)
+            strncpy (solard_cfg.day_to_reset_Pcounters_str, value, MAXLEN);
         }
         /* Close file */
         fclose (fp);
@@ -328,16 +337,19 @@ parse_config()
     strcpy( buff, solard_cfg.use_pump2_str );
     i = atoi( buff );
     solard_cfg.use_pump2 = i;
+    strcpy( buff, solard_cfg.day_to_reset_Pcounters_str );
+    i = atoi( buff );
+    if ( i ) solard_cfg.day_to_reset_Pcounters = i;
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d",\
+        sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d, resetPday=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
-        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2 );
+        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
         } else {
-        sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d",\
+        sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d, resetPday=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
-        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2 );
+        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
     }
     log_message(LOG_FILE, buff);
 }
@@ -711,6 +723,7 @@ GetCurrentTime() {
     time_t t;
     struct tm *t_struct;
     short adjusted = 0;
+    unsigned short current_day_of_month = 0;
 
     t = time(NULL);
     t_struct = localtime( &t );
@@ -744,6 +757,17 @@ GetCurrentTime() {
             sprintf( buff, " INFO: adjusted night energy hours, start %.2hu:00,"\
             " stop %.2hu:59.", NEstart, NEstop );
             log_message(LOG_FILE, buff);
+        }
+        /* among other things - manage power used counters */
+        strftime( buff, sizeof buff, "%e", t_struct );
+        current_day_of_month = atoi( buff );
+        if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
+            /* if it is the right day - print power usage in log and reset counters */
+            sprintf( buff, " INFO: Power counters reset. Usage: daily: %2.2f Wh,"\
+            " nightly: %2.2f Wh, total: %2.2f Wh.", (TotalPowerUsed-NightlyPowerUsed), NightlyPowerUsed, TotalPowerUsed );
+            log_message(LOG_FILE, buff);
+            TotalPowerUsed = 0;
+            NightlyPowerUsed = 0;
         }
     }
 }
