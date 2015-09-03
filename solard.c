@@ -1153,7 +1153,7 @@ main(int argc, char *argv[])
             GetCurrentTime();
             /* and increase counter controlling writing out persitent power use data */
             iter_P++;
-            if ( iter_P == 6) {
+            if ( iter_P == 2) {
                 iter_P = 0;
                 WritePersistentPower();
             }
