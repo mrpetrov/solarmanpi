@@ -1244,12 +1244,13 @@ main(int argc, char *argv[])
             sleep( 4 );
         }
         else {
-            if ( ProgramRunCycles < 30 ) {
-                /* if we have not run for at least 5 minutes - use hardcoded sleep() */
+            /* if we have not run for 5 minutes or time is skewed (ex. daylitght saving) */
+            if ( (ProgramRunCycles <= 30) || ((tvalAfter.tv_sec - tvalBefore.tv_sec) >= 15) ) {
+                /* use hardcoded sleep() */
                 sleep( 4 );
             }
             else {
-                /* if we are past the 5 minute runtime mark - calculate exact sleep time
+                /* otherwise we have valid time data - so calculate exact sleep time
                 so period between active operations is bang on 10 seconds */
                 usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
                 + tvalAfter.tv_usec) - tvalBefore.tv_usec));
