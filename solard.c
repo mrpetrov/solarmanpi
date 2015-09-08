@@ -1242,10 +1242,11 @@ main(int argc, char *argv[])
         if ( gettimeofday( &tvalAfter, NULL ) ) {
             log_message(LOG_FILE," WARNING: error getting tvalAfter...");
             sleep( 4 );
-            } else {
+        }
+        else {
             if ( ProgramRunCycles < 30 ) {
                 /* if we have not run for at least 5 minutes - use hardcoded sleep() */
-                sleep ( 4 );
+                sleep( 4 );
             }
             else {
                 /* if we are past the 5 minute runtime mark - calculate exact sleep time
