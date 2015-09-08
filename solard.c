@@ -935,10 +935,10 @@ SelectIdleMode() {
     }
     /* Try to keep Grundfoss UPS2 pump dandy - turn it on every 48 hours */
     if ( (!CPump1) && (SCPump1 > (6*60*48)) ) wantP1on = 1;
-    /* If solar pump has been off for 90 minutes during day time - turn it on for a while,
+    /* If solar pump has been off for 60 minutes during day time - turn it on for a while,
     to circulate fluid */
-    if ( (!CPump2) && (SCPump2 > (6*90)) &&
-    (current_timer_hour > 10) && (current_timer_hour < 17)) wantP2on = 1;
+    if ( (!CPump2) && (SCPump2 > (6*60)) &&
+    (current_timer_hour >= 11) && (current_timer_hour <= 16)) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
