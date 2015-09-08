@@ -910,7 +910,9 @@ SelectIdleMode() {
     if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Solar has heat in excess - rise boiler temp to 62 C so expensive sources
     are not used later on during the day */
-    if ((Tkolektor > (TboilerHigh+14.9))&&(TboilerHigh < 62)) wantP2on = 1;
+    if ((Tkolektor > (TboilerLow+14.9))&&(TboilerHigh < 62)) wantP2on = 1;
+    /* Keep solar pump on while temp diff is 5 C or more */
+    if ((CPump2) && (Tkolektor >= (TboilerLow+5))) wantP2on = 1;
     /* Try to heat the house by taking heat from boiler but leave at least 5 C extra on
     top of the wanted temp - turn furnace pump on and open the valve */
     if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
@@ -953,7 +955,7 @@ SelectHeatingMode() {
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-    if ((Tkolektor > (TboilerHigh + 14.9))&&(Tkolektor > Tkotel)) {
+    if ((Tkolektor > (TboilerLow + 14.9))&&(Tkolektor > Tkotel)) {
         /* To enable solar heating, ECT temp must be at least 15 C higher than the boiler */
         wantP2on = 1;
     }
