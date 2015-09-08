@@ -108,7 +108,7 @@ char *sensor_paths[] = { SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
 program can safely shut down everything, send notification and bail out;
 initialised with borderline value to trigger immediately on errors during
 start-up; the program logic tolerates 1 minute of missing sensor data */
-unsigned int sensor_read_errors[] = { 4, 4, 4, 4 };
+unsigned short sensor_read_errors[TOTALSENSORS] = { 4, 4, 4, 4 };
 
 /* current sensors temperatures - e.g. values from last read */
 float sensors[9] = { -200, 10, 12, 20, 10, 10, 12, 20, 10 };
