@@ -856,10 +856,10 @@ GetCurrentTime() {
         current_day_of_month = atoi( buff );
         if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
             /* if it is the right day - print power usage in log and reset counters */
-            sprintf( buff, " INFO: Power used last month: daily: %2.2fWh, , nightly: %2.2fWh;",
+            sprintf( buff, " INFO: Power used last month: daily: %2.2f Wh, nightly: %2.2f Wh;",
             (TotalPowerUsed-NightlyPowerUsed), NightlyPowerUsed );
             log_message(LOG_FILE, buff);
-            sprintf( buff, " INFO: total: %2.2fWh. Power counters reset.", TotalPowerUsed );
+            sprintf( buff, " INFO: total: %2.2f Wh. Power counters reset.", TotalPowerUsed );
             log_message(LOG_FILE, buff);
             TotalPowerUsed = 0;
             NightlyPowerUsed = 0;
