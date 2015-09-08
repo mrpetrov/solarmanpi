@@ -105,8 +105,10 @@
 char *sensor_paths[] = { SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
 
 /* var to keep track of read errors, so if a threshold is reached - the
-program can safely shut down everything, send notification and bail out */
-unsigned int sensor_read_errors = (11*TOTALSENSORS);
+program can safely shut down everything, send notification and bail out;
+initialised with borderline value to trigger immediately on errors during
+start-up; the program logic tolerates 1 minute of missing sensor data */
+unsigned int sensor_read_errors[] = { 4, 4, 4, 4 };
 
 /* current sensors temperatures - e.g. values from last read */
 float sensors[9] = { -200, 10, 12, 20, 10, 10, 12, 20, 10 };
@@ -715,21 +717,21 @@ ReadSensors() {
     for (i=0;i<TOTALSENSORS;i++) {
         new_val = sensorRead(sensor_paths[i]);
         if ( new_val != -200 ) {
-            if (sensor_read_errors) sensor_read_errors--;
+            if (sensor_read_errors[i]) sensor_read_errors[i]--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
             if (new_val < (sensors[i+5]-(2*MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
-                sensor_read_errors++;
+                sensor_read_errors[i]++;
             }
             if (new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
-                sensor_read_errors++;
+                sensor_read_errors[i]++;
             }
             if (new_val < (sensors[i+5]-MAX_TEMP_DIFF)) {
                 sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
@@ -747,19 +749,23 @@ ReadSensors() {
             sensors[i+1] = new_val;
         }
         else {
-            sensor_read_errors++;
-            sprintf( msg, " WARNING: ReadSensors() errors++ for sensor %d.", i+1 );
+            sensor_read_errors[i]++;
+            sprintf( msg, " WARNING: Sensor %d ReadSensors() errors++. Counter at %d.", i+1, sensor_read_errors[i] );
             log_message(LOG_FILE, msg);
         }
     }
-    if (sensor_read_errors>(12*TOTALSENSORS)){
-        /* log the errors, clean up and bail out */
-        if ( ! DisableGPIOpins() ) {
-            log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed. Halting!");
-            exit(5);
+    /* Allow for maximum of 6 consecutive 10 second intervals of missing sensor data
+    on any of the sensors before quitting screaming... */
+    for (i=0;i<TOTALSENSORS;i++) {
+        if (sensor_read_errors[i]>=5)){
+            /* log the errors, clean up and bail out */
+            if ( ! DisableGPIOpins() ) {
+                log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed. Halting!");
+                exit(5);
+            }
+            log_message(LOG_FILE, " ALARM: Too many sensor read errors! Stopping.");
+            exit(6);
         }
-        log_message(LOG_FILE, " ALARM: Too many sensor read errors! Stopping.");
-        exit(6);
     }
 }
 
