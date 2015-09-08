@@ -1241,11 +1241,18 @@ main(int argc, char *argv[])
         }
         if ( gettimeofday( &tvalAfter, NULL ) ) {
             log_message(LOG_FILE," WARNING: error getting tvalAfter...");
-            sleep( 5 );
+            sleep( 4 );
             } else {
-            /* ..and sleep for rest of the 10 seconds wait period */
-            usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
-            + tvalAfter.tv_usec) - tvalBefore.tv_usec));
+            if ( ProgramRunCycles < 30 ) {
+                /* if we have not run for at least 5 minutes - use hardcoded sleep() */
+                sleep ( 4 );
+            }
+            else {
+                /* if we are past the 5 minute runtime mark - calculate exact sleep time
+                so period between active operations is bang on 10 seconds */
+                usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
+                + tvalAfter.tv_usec) - tvalBefore.tv_usec));
+            }
         }
     } while (1);
 
