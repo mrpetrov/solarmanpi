@@ -904,8 +904,6 @@ SelectIdleMode() {
     short wantVon = 0;
     /* If furnace is cold - turn pump on to keep it from freezing */
     if (Tkotel < 8.9) wantP1on = 1;
-    /* If solar is cold - turn pump on to keep it from freezing */
-    if (Tkolektor < 8.9) wantP2on = 1;
     /* Furnace is above 52 - at these temps always run the pump */
     if (Tkotel > 52) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
