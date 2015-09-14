@@ -907,7 +907,7 @@ SelectIdleMode() {
     /* Furnace is above 52 - at these temps always run the pump */
     if (Tkotel > 52) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
-    if ((Tkotel > 44.9)&&(Tkotel > TkotelPrev+0.06)) wantP1on = 1;
+    if ((Tkotel > 44.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
     /* Furnace is above 36 and rising slowly - turn pump on */
     if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
     /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
