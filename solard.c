@@ -902,8 +902,8 @@ SelectIdleMode() {
     short wantP1on = 0;
     short wantP2on = 0;
     short wantVon = 0;
-    /* If furnace is cold - turn pump on to keep it from freezing */
-    if (Tkotel < 8.9) wantP1on = 1;
+    /* If furnace is cold - turn pump every 30 min on to prevent freezing */
+    if ((Tkotel < 3.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
     /* Furnace is above 52 - at these temps always run the pump */
     if (Tkotel > 52) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
