@@ -926,7 +926,7 @@ SelectIdleMode() {
     }
     /* Furnace has heat in excess - open the valve so boiler can build up
     heat now and probably save on electricity use later on */
-    if ((TboilerHigh > (float)solard_cfg.wanted_T)&&(Tkotel > (TboilerHigh+9.9))) {
+    if ((Tkotel > (TboilerLow+9.9))&&(TboilerHigh < 62)) {
         wantVon = 1;
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
