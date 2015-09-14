@@ -967,7 +967,7 @@ SelectHeatingMode() {
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerHigh + 9.9)) {
+        if (Tkotel > (TboilerLow + 9.9)) {
             /* The furnace is hot enough - use it */
             wantVon = 1;
             /* And if valve has been open for 2 minutes - turn furnace pump on */
