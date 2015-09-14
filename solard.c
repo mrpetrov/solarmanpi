@@ -931,6 +931,8 @@ SelectIdleMode() {
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
     }
+    /* Keep valve open while there is still heat to exploit */
+    if ((CValve) && (Tkotel >= (TboilerLow+5))) wantVon = 1;
     /* Try to keep Grundfoss UPS2 pump dandy - turn it on every 48 hours */
     if ( (!CPump1) && (SCPump1 > (6*60*48)) ) wantP1on = 1;
     /* If solar pump has been off for 60 minutes during day time - turn it on for a while,
