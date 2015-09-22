@@ -9,6 +9,8 @@ is triggered at one diff, and pumps/valves are kept on until the diff
 reaches a second, lower value.
 As this system has a drain back evacuated tubes collector - all anti-freeze
 logic for the ECT has been removed.
+This release also fixes the possible long waits/hangs when the system clock
+changes - solard now handles these cases gracefully.
 
 Shortlog:
 Upper boiler heating limit is now 68 C
