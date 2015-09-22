@@ -1243,7 +1243,7 @@ main(int argc, char *argv[])
             sleep( 7 );
         }
         else {
-            /* use hardcoded sleep() if time is skewed (ex. daylitght saving, ntp adjustments, etc.) */
+            /* use hardcoded sleep() if time is skewed (for eg. daylight saving, ntp adjustments, etc.) */
             if ((tvalAfter.tv_sec - tvalBefore.tv_sec) > 12) {
                 sleep( 7 );
             }
