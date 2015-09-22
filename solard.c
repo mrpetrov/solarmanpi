@@ -1240,13 +1240,12 @@ main(int argc, char *argv[])
         }
         if ( gettimeofday( &tvalAfter, NULL ) ) {
             log_message(LOG_FILE," WARNING: error getting tvalAfter...");
-            sleep( 6 );
+            sleep( 7 );
         }
         else {
-            /* if we have not run for 5 minutes or time is skewed (ex. daylitght saving) */
-            if ( (ProgramRunCycles <= 30) || ((tvalAfter.tv_sec - tvalBefore.tv_sec) >= 15) ) {
-                /* use hardcoded sleep() */
-                sleep( 6 );
+            /* use hardcoded sleep() if time is skewed (ex. daylitght saving, ntp adjustments, etc.) */
+            if ((tvalAfter.tv_sec - tvalBefore.tv_sec) > 12) {
+                sleep( 7 );
             }
             else {
                 /* otherwise we have valid time data - so calculate exact sleep time
