@@ -780,8 +780,8 @@ ReadExternalPower() {
 /* Return non-zero value on critical condition found based on current data in sensors[] */
 short
 CriticalTempsFound() {
-    if (Tkotel >= 72) return 1;
-    if (TboilerHigh >= 70) return 3;
+    if (Tkotel > 72) return 1;
+    if (TboilerHigh > 72) return 3;
     return 0;
 }
 
