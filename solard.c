@@ -47,7 +47,7 @@
     day_to_reset_Pcounters=7
 */
 
-#define SOLARDVERSION    "3.4 2015-09-03"
+#define SOLARDVERSION    "3.5-rc4 2015-09-14"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -105,8 +105,10 @@
 char *sensor_paths[] = { SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
 
 /* var to keep track of read errors, so if a threshold is reached - the
-program can safely shut down everything, send notification and bail out */
-unsigned int sensor_read_errors = (11*TOTALSENSORS);
+program can safely shut down everything, send notification and bail out;
+initialised with borderline value to trigger immediately on errors during
+start-up; the program logic tolerates 1 minute of missing sensor data */
+unsigned short sensor_read_errors[TOTALSENSORS] = { 4, 4, 4, 4 };
 
 /* current sensors temperatures - e.g. values from last read */
 float sensors[9] = { -200, 10, 12, 20, 10, 10, 12, 20, 10 };
@@ -715,21 +717,21 @@ ReadSensors() {
     for (i=0;i<TOTALSENSORS;i++) {
         new_val = sensorRead(sensor_paths[i]);
         if ( new_val != -200 ) {
-            if (sensor_read_errors) sensor_read_errors--;
+            if (sensor_read_errors[i]) sensor_read_errors[i]--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
             if (new_val < (sensors[i+5]-(2*MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
-                sensor_read_errors++;
+                sensor_read_errors[i]++;
             }
             if (new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF))) {
                 sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
-                sensor_read_errors++;
+                sensor_read_errors[i]++;
             }
             if (new_val < (sensors[i+5]-MAX_TEMP_DIFF)) {
                 sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
@@ -747,19 +749,23 @@ ReadSensors() {
             sensors[i+1] = new_val;
         }
         else {
-            sensor_read_errors++;
-            sprintf( msg, " WARNING: ReadSensors() errors++ for sensor %d.", i+1 );
+            sensor_read_errors[i]++;
+            sprintf( msg, " WARNING: Sensor %d ReadSensors() errors++. Counter at %d.", i+1, sensor_read_errors[i] );
             log_message(LOG_FILE, msg);
         }
     }
-    if (sensor_read_errors>(12*TOTALSENSORS)){
-        /* log the errors, clean up and bail out */
-        if ( ! DisableGPIOpins() ) {
-            log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed. Halting!");
-            exit(5);
+    /* Allow for maximum of 6 consecutive 10 second intervals of missing sensor data
+    on any of the sensors before quitting screaming... */
+    for (i=0;i<TOTALSENSORS;i++) {
+        if (sensor_read_errors[i]>=5) {
+            /* log the errors, clean up and bail out */
+            if ( ! DisableGPIOpins() ) {
+                log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed. Halting!");
+                exit(5);
+            }
+            log_message(LOG_FILE, " ALARM: Too many sensor read errors! Stopping.");
+            exit(6);
         }
-        log_message(LOG_FILE, " ALARM: Too many sensor read errors! Stopping.");
-        exit(6);
     }
 }
 
@@ -774,8 +780,8 @@ ReadExternalPower() {
 /* Return non-zero value on critical condition found based on current data in sensors[] */
 short
 CriticalTempsFound() {
-    if (Tkotel >= 72) return 1;
-    if (TboilerHigh >= 70) return 3;
+    if (Tkotel > 72) return 1;
+    if (TboilerHigh > 72) return 3;
     return 0;
 }
 
@@ -850,10 +856,10 @@ GetCurrentTime() {
         current_day_of_month = atoi( buff );
         if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
             /* if it is the right day - print power usage in log and reset counters */
-            sprintf( buff, " INFO: Power used last month: daily: %2.2fWh, , nightly: %2.2fWh;",
+            sprintf( buff, " INFO: Power used last month: daily: %2.2f Wh, nightly: %2.2f Wh;",
             (TotalPowerUsed-NightlyPowerUsed), NightlyPowerUsed );
             log_message(LOG_FILE, buff);
-            sprintf( buff, " INFO: total: %2.2fWh. Power counters reset.", TotalPowerUsed );
+            sprintf( buff, " INFO: total: %2.2f Wh. Power counters reset.", TotalPowerUsed );
             log_message(LOG_FILE, buff);
             TotalPowerUsed = 0;
             NightlyPowerUsed = 0;
@@ -864,7 +870,7 @@ GetCurrentTime() {
 short
 BoilerHeatingNeeded() {
     if ( TboilerLow > ((float)solard_cfg.wanted_T + 1) ) return 0;
-    if ( TboilerHigh < ((float)solard_cfg.wanted_T - 0.3) ) return 1;
+    if ( TboilerHigh < ((float)solard_cfg.wanted_T - 0.5) ) return 1;
     if ( (TboilerHigh < TboilerHighPrev) &&
     (TboilerHighPrev < (float)solard_cfg.wanted_T ) ) return 1;
     return 0;
@@ -896,21 +902,20 @@ SelectIdleMode() {
     short wantP1on = 0;
     short wantP2on = 0;
     short wantVon = 0;
-    /* If furnace is cold - turn pump on to keep it from freezing */
-    if (Tkotel < 8.9) wantP1on = 1;
-    /* If solar is cold - turn pump on to keep it from freezing */
-    if (Tkolektor < 8.9) wantP2on = 1;
+    /* If furnace is cold - turn pump every 30 min on to prevent freezing */
+    if ((Tkotel < 3.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
     /* Furnace is above 52 - at these temps always run the pump */
     if (Tkotel > 52) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
-    if ((Tkotel > 44.9)&&(Tkotel > TkotelPrev+0.06)) wantP1on = 1;
+    if ((Tkotel > 44.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
     /* Furnace is above 36 and rising slowly - turn pump on */
     if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
     /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
-    /* Solar has heat in excess - rise boiler temp to 62 C so expensive sources
-    are not used later on during the day */
-    if ((Tkolektor > (TboilerHigh+14.9))&&(TboilerHigh < 62)) wantP2on = 1;
+    /* Solar has heat in excess - build up boiler temp so expensive sources stay idle */
+    if ((Tkolektor > (TboilerLow+14.9))&&(TboilerHigh < 68)) wantP2on = 1;
+    /* Keep solar pump on while temp diff is 5 C or more */
+    if ((CPump2) && (Tkolektor >= (TboilerLow+5))) wantP2on = 1;
     /* Try to heat the house by taking heat from boiler but leave at least 5 C extra on
     top of the wanted temp - turn furnace pump on and open the valve */
     if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
@@ -920,17 +925,19 @@ SelectIdleMode() {
     }
     /* Furnace has heat in excess - open the valve so boiler can build up
     heat now and probably save on electricity use later on */
-    if ((TboilerHigh > (float)solard_cfg.wanted_T)&&(Tkotel > (TboilerHigh+9.9))) {
+    if ((Tkotel > (TboilerLow+9.9))&&(TboilerHigh < 68)) {
         wantVon = 1;
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
     }
+    /* Keep valve open while there is still heat to exploit */
+    if ((CValve) && (Tkotel >= (TboilerLow+5))) wantVon = 1;
     /* Try to keep Grundfoss UPS2 pump dandy - turn it on every 48 hours */
     if ( (!CPump1) && (SCPump1 > (6*60*48)) ) wantP1on = 1;
-    /* If solar pump has been off for 90 minutes during day time - turn it on for a while,
-    to circulate fluid */
-    if ( (!CPump2) && (SCPump2 > (6*90)) &&
-    (current_timer_hour > 10) && (current_timer_hour < 17)) wantP2on = 1;
+    /* If solar pump has been off for 60 minutes during day time - turn it on for a while,
+    if there is at least some temperature in it - we do not want to waste heat */
+    if ( (!CPump2) && (SCPump2 > (6*60)) && (Tkolektor > (TboilerLow+6)) &&
+    (current_timer_hour >= 9) && (current_timer_hour <= 17)) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
@@ -953,13 +960,13 @@ SelectHeatingMode() {
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-    if ((Tkolektor > (TboilerHigh + 14.9))&&(Tkolektor > Tkotel)) {
+    if ((Tkolektor > (TboilerLow + 14.9))&&(Tkolektor > Tkotel)) {
         /* To enable solar heating, ECT temp must be at least 15 C higher than the boiler */
         wantP2on = 1;
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerHigh + 9.9)) {
+        if (Tkotel > (TboilerLow + 9.9)) {
             /* The furnace is hot enough - use it */
             wantVon = 1;
             /* And if valve has been open for 2 minutes - turn furnace pump on */
@@ -1233,11 +1240,19 @@ main(int argc, char *argv[])
         }
         if ( gettimeofday( &tvalAfter, NULL ) ) {
             log_message(LOG_FILE," WARNING: error getting tvalAfter...");
-            sleep( 5 );
-            } else {
-            /* ..and sleep for rest of the 10 seconds wait period */
-            usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
-            + tvalAfter.tv_usec) - tvalBefore.tv_usec));
+            sleep( 7 );
+        }
+        else {
+            /* use hardcoded sleep() if time is skewed (ex. daylitght saving, ntp adjustments, etc.) */
+            if ((tvalAfter.tv_sec - tvalBefore.tv_sec) > 12) {
+                sleep( 7 );
+            }
+            else {
+                /* otherwise we have valid time data - so calculate exact sleep time
+                so period between active operations is bang on 10 seconds */
+                usleep(10000000 - (((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L \
+                + tvalAfter.tv_usec) - tvalBefore.tv_usec));
+            }
         }
     } while (1);
 
