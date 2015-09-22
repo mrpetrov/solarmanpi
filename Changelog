@@ -1,3 +1,46 @@
+3.5 2015-09-22
+Summary: the last planned and necessary change is now in - each sensor now
+has its own error counter, and solard will work for 1 minute even with all
+sensors missing.
+This release includes the fix for the segfault in 3.4, caused by buffer
+overrun.
+Heating from alternative sources is much improved - now transferring heat
+is triggered at one diff, and pumps/valves are kept on until the diff
+reaches a second, lower value.
+As this system has a drain back evacuated tubes collector - all anti-freeze
+logic for the ECT has been removed.
+This release also fixes the possible long waits/hangs when the system clock
+changes - solard now handles these cases gracefully.
+
+Shortlog:
+Upper boiler heating limit is now 68 C
+Use hardcoded sleep time only when necessary
+Critical temps are above 72 C now
+Version 3.5-rc4
+Allow boiler to heat up to 65 C
+If valve is open - keep it that way while diff is 5 C or more
+Switch furnace idle heat build-up logic to use boiler low sensor
+Put missing braces in place
+Improve furnace anti-freeze logic
+Do not try to save something that needs no saving - remove ECT anti-freeze logic
+Make main mode select routine compare boiler lower end
+Increase BoilerHeatingNeeded() wigle room to 0.5 C
+Version 3.5-rc3
+9:00 to 17:59 - turn on solar pump every 60 minutes if there is some heat
+Version 3.5-rc2
+Tweak hardcoded sleep time
+Fix build error causing typo
+Handle gracefully skewed time
+Label dev version 3.5-rc1
+Fix some identation problems
+Lower solar pump idle rests to 60 minutes between 11:00 and 16:59
+For the first 5 minutes of runtime - use hardcoded sleep time
+Fix up texts for power used counters reset log messages
+Fix sensor_read_errors[] array definition
+Count sensor read errors individually for each sensor; allow for max ~1 minute operation without any of the sensors
+Switch solar logic to use boiler low sensor, and keep pump on while diff is 5 C or more
+Fix segfault causing buffer overrun by splitting message
+
 3.4 2015-09-03
 Summary: two new config options - "use_pump2" and "day_to_reset_Pcounters".
 First controls the use of pump2 - solar pump - and should be used to
