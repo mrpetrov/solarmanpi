@@ -1080,7 +1080,7 @@ ActivateHeatingMode(const short HeatMode) {
 }
 
 void
-AdjustHeatingModeForBatteryPower(short HM) {
+AdjustHeatingModeForBatteryPower(unsigned short HM) {
     /* Check for power source switch */
     if ( CPowerByBattery != CPowerByBatteryPrev ) {
         /* If we just switched to battery.. */
@@ -1104,10 +1104,10 @@ int
 main(int argc, char *argv[])
 {
     /* set iter to its max value - makes sure we get a clock reading upon start */
-    short iter = 30;
-    short iter_P = 0;
-    short AlarmRaised = 0;
-    short HeatingMode = 0;
+    unsigned short iter = 30;
+    unsigned short iter_P = 0;
+    unsigned short AlarmRaised = 0;
+    unsigned short HeatingMode = 0;
     struct timeval tvalBefore, tvalAfter;
 
     SetDefaultCfg();
