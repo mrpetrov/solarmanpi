@@ -47,7 +47,7 @@
     day_to_reset_Pcounters=7
 */
 
-#define SOLARDVERSION    "3.5 2015-09-22"
+#define SOLARDVERSION    "3.6-rc1 2015-10-04"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -914,7 +914,7 @@ SelectIdleMode() {
     if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Solar has heat in excess - build up boiler temp so expensive sources stay idle */
     if ((Tkolektor > (TboilerLow+14.9))&&(TboilerHigh < 68)) wantP2on = 1;
-    /* Keep solar pump on while temp diff is 5 C or more */
+    /* Keep solar pump on while solar fluid is more than 5 C hotter than boiler lower end */
     if ((CPump2) && (Tkolektor >= (TboilerLow+5))) wantP2on = 1;
     /* Try to heat the house by taking heat from boiler but leave at least 5 C extra on
     top of the wanted temp - turn furnace pump on and open the valve */
