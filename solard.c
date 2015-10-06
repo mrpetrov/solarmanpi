@@ -913,7 +913,7 @@ SelectIdleMode() {
     /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Solar has heat in excess - build up boiler temp so expensive sources stay idle */
-    if ((Tkolektor > (TboilerLow+14.9))&&(TboilerHigh < 68)) wantP2on = 1;
+    if ((Tkolektor > (TboilerLow+11.9))&&(TboilerHigh < 68)) wantP2on = 1;
     /* Keep solar pump on while solar fluid is more than 5 C hotter than boiler lower end */
     if ((CPump2) && (Tkolektor >= (TboilerLow+5))) wantP2on = 1;
     /* Try to heat the house by taking heat from boiler but leave at least 5 C extra on
