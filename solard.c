@@ -869,8 +869,8 @@ GetCurrentTime() {
 
 short
 BoilerHeatingNeeded() {
-    if ( TboilerLow > ((float)solard_cfg.wanted_T + 1) ) return 0;
-    if ( TboilerHigh < ((float)solard_cfg.wanted_T - 0.5) ) return 1;
+    if ( TboilerLow > ((float)solard_cfg.wanted_T) ) return 0;
+    if ( TboilerHigh < ((float)solard_cfg.wanted_T - 0.2) ) return 1;
     if ( (TboilerHigh < TboilerHighPrev) &&
     (TboilerHighPrev < (float)solard_cfg.wanted_T ) ) return 1;
     return 0;
