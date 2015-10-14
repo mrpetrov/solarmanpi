@@ -26,8 +26,8 @@
 
     # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
     # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANAUL PUMP1+HEATER
-    # mode: 7=AUTO ELECTICAL HEATER ONLY - this one obeys start/stop hours
-    # mode: 8=AUTO ELECTICAL HEATER ONLY, DOES NOT CARE ABOUT SCHEDULE !!!
+    # mode: 7=AUTO ELECTRICAL HEATER ONLY - this one obeys start/stop hours
+    # mode: 8=AUTO ELECTRICAL HEATER ONLY, DOES NOT CARE ABOUT SCHEDULE !!!
     mode=1
 
     # wanted_T: the desired temperature of water in tank
