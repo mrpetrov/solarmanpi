@@ -91,7 +91,7 @@
 #define POWER  25 /* P1-22 */
 
 /* Maximum difference allowed for data received from sensors between reads, C */
-#define MAX_TEMP_DIFF        6
+#define MAX_TEMP_DIFF        7
 
 /* Number of all sensors to be used by the system */
 #define TOTALSENSORS         4
