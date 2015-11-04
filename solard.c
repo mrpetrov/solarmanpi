@@ -904,7 +904,7 @@ SelectIdleMode() {
     short wantVon = 0;
     /* If furnace is cold - turn pump every 30 min on to prevent freezing */
     if ((Tkotel < 3.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
-    /* Furnace is above 52 - at these temps always run the pump */
+    /* Furnace is above 50 - at these temps always run the pump */
     if (Tkotel > 50) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
     if ((Tkotel > 44.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
@@ -913,7 +913,7 @@ SelectIdleMode() {
     /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 21.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Solar has heat in excess - build up boiler temp so expensive sources stay idle */
-    if ((Tkolektor > (TboilerLow+7.5))&&(TboilerHigh < 68)) wantP2on = 1;
+    if ((Tkolektor > (TboilerLow+7.5))&&(TboilerHigh < 60)) wantP2on = 1;
     /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
     if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
     /* Try to heat the house by taking heat from boiler but leave at least 6 C extra on
@@ -925,7 +925,7 @@ SelectIdleMode() {
     }
     /* Furnace has heat in excess - open the valve so boiler can build up
     heat now and probably save on electricity use later on */
-    if ((Tkotel > (TboilerLow+5.9))&&(TboilerHigh < 68)) {
+    if ((Tkotel > (TboilerLow+5.9))&&(TboilerHigh < 60)) {
         wantVon = 1;
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
