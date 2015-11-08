@@ -1,3 +1,41 @@
+3.6 2015-11-08
+Summary: Gradually improved solard by adjusting it to actual physically
+installed system - now we run in true drain-back mode, played with
+values of evacuated tube colletor usage in respect with its location,
+and now we track the two separate pumps separately, so power usage data
+is more accurate.
+
+Shortlog of changes since 3.5:
+Adjust furnace pump temp trigger ladder
+Track pumps power more accurately - differentiate pump1 and pump2
+Tweak solar pump forced runs: every 75 mins from 11:00 to 15:59
+Allow valve start closing at 3 mins being open
+Reorder power usage printout at counters reset
+Version 3.6-rc7
+Bring boiler max temp down to 60 C
+Tweak deltas again: ECT is 7.5 C, furnace 5 C, both run to 3 C diff
+Version 3.6-rc6
+Always run furnace pump if furnace temp is 50+ C
+Tweak deltas - start using sources earlier, keep using them longer
+Increase allowed temp step to 14 C between reads
+Fix typos in example config
+Version 3.6-rc5
+Keep boiler temp closer to the desired one
+Version 3.6-rc4
+Tweak solar pump forced runs: every 60 mins from 11:00 to 15:59
+Increase boiler heater minimum run time to 3 mins
+Make furnace pump run at least once a day
+Increase solar pump minimum run time to 60 secs
+Version 3.6-rc3
+Increase allowed temp step to 12 C between reads
+Version 3.6-rc2
+Lower solar diff required from 15 C to 12 C
+Tweak solar pump forced runs: every 45 mins from 11:00 to 15:59
+Name release v3.6-rc1
+Run solar pump during daytime every 30 minutes …
+Make disabling the electric heater when battery powered actually work
+Fix comment typo
+
 3.5 2015-09-22
 Summary: the last planned and necessary change is now in - each sensor now
 has its own error counter, and solard will work for 1 minute even with all
