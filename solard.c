@@ -147,13 +147,15 @@ float NightlyPowerUsed;
 
 /* solard keeps track of total and night tariff watt-hours electrical power used */
 /* night tariff is between 23:00 and 06:00 */
-/* constants of Watts of electricity used per 10 secs */
+/* constants of Watt-hours of electricity used per 10 secs */
 #define   HEATERPPC         8.340
-#define   PUMPPPC           0.140
+#define   PUMP1PPC          0.135
+#define   PUMP2PPC          0.021
 #define   VALVEPPC          0.006
 #define   SELFPPC           0.022
 /* my boiler uses 3kW per hour, so this is 0,00834 kWh per 10 seconds */
 /* this in Wh per 10 seconds is 8.34 W */
+/* pump 1 (furnace) runs at 48 W setting, pump 2 (solar) - 7 W */
 
 /* NightEnergy (NE) start and end hours variables - get recalculated every days */
 unsigned short NEstart = 20;
@@ -804,8 +806,11 @@ write_log_start() {
     log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
     log_message(LOG_FILE," writing table data for collectd to "TABLE_FILE );
     log_message(LOG_FILE," power used persistence file "POWER_FILE );
-    sprintf( start_log_text, " powers: heater=%3.1f W, pump=%3.1f W, valve=%3.1f W, self=%3.1f W",\
-    HEATERPPC*(6*60), PUMPPPC*(6*60), VALVEPPC*(6*60), SELFPPC*(6*60) );
+    sprintf( start_log_text, " powers: heater=%3.1f W, pump1=%3.1f W, pump2=%3.1f W",
+    HEATERPPC*(6*60), PUMP1PPC*(6*60), PUMP2PPC*(6*60) );
+    log_message(LOG_FILE, start_log_text );
+    sprintf( start_log_text, " powers: valve=%3.1f W, self=%3.1f W",
+    VALVEPPC*(6*60), SELFPPC*(6*60) );
     log_message(LOG_FILE, start_log_text );
 }
 
@@ -1052,12 +1057,12 @@ ActivateHeatingMode(const short HeatMode) {
         if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += HEATERPPC; }
     }
     if ( CPump1 ) {
-        TotalPowerUsed += PUMPPPC;
-        if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += PUMPPPC; }
+        TotalPowerUsed += PUMP1PPC;
+        if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += PUMP1PPC; }
     }
     if ( CPump2 ) {
-        TotalPowerUsed += PUMPPPC;
-        if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += PUMPPPC; }
+        TotalPowerUsed += PUMP2PPC;
+        if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) { NightlyPowerUsed += PUMP2PPC; }
     }
     if ( CValve ) {
         TotalPowerUsed += VALVEPPC;
