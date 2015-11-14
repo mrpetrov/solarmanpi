@@ -907,6 +907,7 @@ SelectIdleMode() {
     short wantP1on = 0;
     short wantP2on = 0;
     short wantVon = 0;
+    short wantHon = 0;
     /* If furnace is cold - turn pump every 30 min on to prevent freezing */
     if ((Tkotel < 3.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
     /* Furnace is above 50 - at these temps always run the pump */
@@ -945,10 +946,17 @@ SelectIdleMode() {
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
+    /* Between 01:00 and (NEstop-1) allow use of electrical heater so that boiler
+    lower end reaches wanted_T + 4 - this should do some savings later on... */
+    if ( (current_timer_hour >= 1) && (current_timer_hour <= (NEstop-1)) ) {
+        if (TboilerLow < ((float)solard_cfg.wanted_T+4))
+           wantHon = 1;
+    }
 
     if ( wantP1on ) ModeSelected |= 1;
     if ( wantP2on ) ModeSelected |= 2;
     if ( wantVon )  ModeSelected |= 4;
+    if ( wantHon )  ModeSelected |= 8;
     return ModeSelected;
 }
 
