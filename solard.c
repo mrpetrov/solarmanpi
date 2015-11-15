@@ -908,6 +908,8 @@ SelectIdleMode() {
     short wantP2on = 0;
     short wantVon = 0;
     short wantHon = 0;
+    float nightEnergyTemp = 0;
+
     /* If furnace is cold - turn pump every 30 min on to prevent freezing */
     if ((Tkotel < 3.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
     /* Furnace is above 50 - at these temps always run the pump */
@@ -946,11 +948,18 @@ SelectIdleMode() {
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
-    /* Between 01:00 and (NEstop-1) allow use of electrical heater so that boiler
-    lower end reaches wanted_T + 4 - this should do some savings later on... */
-    if ( (current_timer_hour >= 1) && (current_timer_hour <= (NEstop-1)) ) {
-        if (TboilerLow < ((float)solard_cfg.wanted_T+4))
-           wantHon = 1;
+    /* In the last 2 hours of night energy tariff heat up boiler until the lower sensor
+    reads 10 C on top of desired temp or 60 C, so that less day energy gets used */
+    if ( (current_timer_hour >= (NEstop-2)) && (current_timer_hour <= NEstop) ) {
+        if (solard_cfg.wanted_T > 49) { 
+            nightEnergyTemp=60.0;
+        } 
+        else { 
+            nightEnergyTemp = ((float)solard_cfg.wanted_T+10);
+        }
+        if (TboilerLow < nightEnergyTemp) { 
+            wantHon = 1;
+        }
     }
 
     if ( wantP1on ) ModeSelected |= 1;
