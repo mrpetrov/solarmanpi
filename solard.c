@@ -911,7 +911,9 @@ SelectIdleMode() {
     float nightEnergyTemp = 0;
 
     /* If furnace is cold - turn pump every 30 min on to prevent freezing */
-    if ((Tkotel < 3.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
+    if ((Tkotel < 2.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
+    /* If ECT is cold - turn pump every 30 min on to prevent freezing */
+    if ((Tkolektor < 2.9)&&(!CPump2)&&(SCPump2 > (6*30))) wantP2on = 1;
     /* Furnace is above 50 - at these temps always run the pump */
     if (Tkotel > 50) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
