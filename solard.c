@@ -47,7 +47,7 @@
     day_to_reset_Pcounters=7
 */
 
-#define SOLARDVERSION    "3.6 2015-11-08"
+#define SOLARDVERSION    "3.7-rc4 2015-11-27"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -634,6 +634,7 @@ signal_handler(int sig)
         break;
         case SIGTERM:
         log_message(LOG_FILE, " INFO: Terminate signal caught. Stopping.");
+        WritePersistentPower();
         if ( ! DisableGPIOpins() ) {
             log_message(LOG_FILE, " WARNING: Errors disabling GPIO! Quitting anyway.");
             exit(4);
@@ -782,8 +783,8 @@ ReadExternalPower() {
 /* Return non-zero value on critical condition found based on current data in sensors[] */
 short
 CriticalTempsFound() {
-    if (Tkotel > 72) return 1;
-    if (TboilerHigh > 72) return 3;
+    if (Tkotel > 66) return 1;
+    if (TboilerHigh > 62) return 2;
     return 0;
 }
 
@@ -907,8 +908,13 @@ SelectIdleMode() {
     short wantP1on = 0;
     short wantP2on = 0;
     short wantVon = 0;
+    short wantHon = 0;
+    float nightEnergyTemp = 0;
+
     /* If furnace is cold - turn pump every 30 min on to prevent freezing */
-    if ((Tkotel < 3.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
+    if ((Tkotel < 2.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
+    /* If ECT is cold - turn pump every 30 min on to prevent freezing */
+    if ((Tkolektor < 2.9)&&(!CPump2)&&(SCPump2 > (6*30))) wantP2on = 1;
     /* Furnace is above 50 - at these temps always run the pump */
     if (Tkotel > 50) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
@@ -945,10 +951,24 @@ SelectIdleMode() {
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
+    /* In the last 2 hours of night energy tariff heat up boiler until the lower sensor
+    reads 12 C on top of desired temp or 60 C, so that less day energy gets used */
+    if ( (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
+        if (solard_cfg.wanted_T > 47) { 
+            nightEnergyTemp=60.0;
+        } 
+        else { 
+            nightEnergyTemp = ((float)solard_cfg.wanted_T + 12);
+        }
+        if (TboilerLow < nightEnergyTemp) { 
+            wantHon = 1;
+        }
+    }
 
     if ( wantP1on ) ModeSelected |= 1;
     if ( wantP2on ) ModeSelected |= 2;
     if ( wantVon )  ModeSelected |= 4;
+    if ( wantHon )  ModeSelected |= 8;
     return ModeSelected;
 }
 
