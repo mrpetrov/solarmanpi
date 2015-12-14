@@ -8,7 +8,7 @@ Also, if solard gets restarted a lot - it now writes down power persistence
 data file, so data loss is minimal.
 
 Shortlog of changes since 3.6:
-	Save electrical energy if possible by using night tariff at the right time
+ Save electrical energy if possible by using night tariff at the right time
  Further improve night energy saving - heat boiler 10 C extra in the last 2 hours of NE
  Fix economy heating - 12 C extra, hours was 3 instead of 2
  Antifreeze logic - below 3 C, turn pumps on (ECT and furnace)
