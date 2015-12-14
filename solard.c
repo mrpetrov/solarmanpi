@@ -634,6 +634,7 @@ signal_handler(int sig)
         break;
         case SIGTERM:
         log_message(LOG_FILE, " INFO: Terminate signal caught. Stopping.");
+        WritePersistentPower();
         if ( ! DisableGPIOpins() ) {
             log_message(LOG_FILE, " WARNING: Errors disabling GPIO! Quitting anyway.");
             exit(4);
