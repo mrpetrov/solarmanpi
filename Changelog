@@ -1,3 +1,21 @@
+3.7 2015-12-14
+Summary: This release is all about fine tweaks, that improve quality.
+Included are changes to solard to save electrical power and better
+preserve the system it manages - anti-freeze logic is back, furnace critical
+temp is now 66 C, which should be all right for normal use, considering 66 C
+on the furnace exit pipe means maybe 10-20 C more at the furnace core itself.
+Also, if solard gets restarted a lot - it now writes down power persistence
+data file, so data loss is minimal.
+
+Shortlog of changes since 3.6:
+	Save electrical energy if possible by using night tariff at the right time
+ Further improve night energy saving - heat boiler 10 C extra in the last 2 hours of NE
+ Fix economy heating - 12 C extra, hours was 3 instead of 2
+ Antifreeze logic - below 3 C, turn pumps on (ECT and furnace)
+ Fine tune critical temps - furnace 66 C, boiler 62 C
+ Write down persistent power usage data file on exit
+
+
 3.6 2015-11-08
 Summary: Gradually improved solard by adjusting it to actual physically
 installed system - now we run in true drain-back mode, played with
