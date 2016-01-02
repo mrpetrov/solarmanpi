@@ -936,7 +936,7 @@ SelectIdleMode() {
     }
     /* Furnace has heat in excess - open the valve so boiler can build up
     heat now and probably save on electricity use later on */
-    if ((Tkotel > (TboilerLow+5.9))&&(TboilerHigh < 60)) {
+    if ((TboilerHigh < 60)&&((Tkotel > (TboilerLow+5.9))||(Tkotel > TboilerHigh))) {
         wantVon = 1;
         /* And if valve has been open for 2 minutes - turn furnace pump on */
         if (CValve && (SCValve > 9)) wantP1on = 1;
