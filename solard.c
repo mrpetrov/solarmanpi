@@ -945,9 +945,9 @@ SelectIdleMode() {
     if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
     /* Turn furnace pump on every 24 hours */
     if ( (!CPump1) && (SCPump1 > (6*60*24)) ) wantP1on = 1;
-    /* Forcibly run solar pump every 75 mins of idle time from 11:00 to 15:59 */
-    if ( (!CPump2) && (SCPump2 > (6*75)) && 
-    (current_timer_hour >= 11) && (current_timer_hour <= 15)) wantP2on = 1;
+    /* Forcibly run solar pump once every day between 11:00 and 12:59 */
+    if ( (!CPump2) && (SCPump2 > (6*900)) && 
+    (current_timer_hour >= 11) && (current_timer_hour <= 12)) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
