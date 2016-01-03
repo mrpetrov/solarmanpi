@@ -913,8 +913,9 @@ SelectIdleMode() {
 
     /* If furnace is cold - turn pump every 30 min on to prevent freezing */
     if ((Tkotel < 2.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
-    /* If ECT is cold - turn pump every 30 min on to prevent freezing */
-    if ((Tkolektor < 2.9)&&(!CPump2)&&(SCPump2 > (6*30))) wantP2on = 1;
+    /* If ETC is VERY cold - turn pump on every 60 min below -8 C to prevent freezing */
+    /* FIXME: this uses boiler heat - the balancing point needs to be found */
+    if ((Tkolektor < -7.9)&&(!CPump2)&&(SCPump2 > (6*60))) wantP2on = 1;
     /* Furnace is above 50 - at these temps always run the pump */
     if (Tkotel > 50) wantP1on = 1;
     /* Furnace is above 45 and rising - turn pump on */
@@ -925,7 +926,7 @@ SelectIdleMode() {
     if ((Tkotel > 11.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is less than 60 C: */
     if (TboilerHigh < 60) {
-       /* ECTs have heat in excess - build up boiler temp so expensive sources stay idle */
+       /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
        if (Tkolektor > (TboilerLow+7.5)) wantP2on = 1;
        /* Furnace has heat in excess - open the valve so boiler can build up
        heat now and probably save on electricity use later on */
