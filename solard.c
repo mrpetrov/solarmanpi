@@ -375,8 +375,8 @@ WritePersistentPower() {
     logfile = fopen( POWER_FILE, "w" );
     if ( !logfile ) return;
     fprintf( logfile, "# solard power persistence file written %s\n", timestamp );
-    fprintf( logfile, "total=%3.3f\n", TotalPowerUsed );
-    fprintf( logfile, "nightly=%3.3f\n", NightlyPowerUsed );
+    fprintf( logfile, "total=%6.3f\n", TotalPowerUsed );
+    fprintf( logfile, "nightly=%6.3f\n", NightlyPowerUsed );
     fclose( logfile );
 }
 
@@ -437,10 +437,10 @@ ReadPersistentPower() {
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using power counters start values: Total=%3.3f, Nightly=%3.3f",
+        sprintf( buff, " INFO: Using power counters start values: Total=%6.3f, Nightly=%6.3f",
         TotalPowerUsed, NightlyPowerUsed );
         } else {
-        sprintf( buff, " INFO: Read power counters start values: Total=%3.3f, Nightly=%3.3f",
+        sprintf( buff, " INFO: Read power counters start values: Total=%6.3f, Nightly=%6.3f",
         TotalPowerUsed, NightlyPowerUsed );
     }
     log_message(LOG_FILE, buff);
@@ -725,27 +725,27 @@ ReadSensors() {
             if (sensor_read_errors[i]) sensor_read_errors[i]--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
             if (new_val < (sensors[i+5]-(2*MAX_TEMP_DIFF))) {
-                sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
+                sprintf( msg, " WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
                 sensor_read_errors[i]++;
             }
             if (new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF))) {
-                sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
+                sprintf( msg, " WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
                 sensor_read_errors[i]++;
             }
             if (new_val < (sensors[i+5]-MAX_TEMP_DIFF)) {
-                sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
+                sprintf( msg, " WARNING: Correcting LOW %6.3f for sensor %d with %6.3f.",\
                 new_val, i+1, sensors[i+5]-MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5]-MAX_TEMP_DIFF;
             }
             if (new_val > (sensors[i+5]+MAX_TEMP_DIFF)) {
-                sprintf( msg, " WARNING: Correcting HIGH %3.3f for sensor %d with %3.3f.",\
+                sprintf( msg, " WARNING: Correcting HIGH %6.3f for sensor %d with %6.3f.",\
                 new_val, i+1, sensors[i+5]+MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5]+MAX_TEMP_DIFF;
@@ -864,10 +864,10 @@ GetCurrentTime() {
         current_day_of_month = atoi( buff );
         if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
             /* if it is the right day - print power usage in log and reset counters */
-            sprintf( buff, " INFO: Power used last month: nightly: %2.2f Wh, daily: %2.2f Wh;",
+            sprintf( buff, " INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
             NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
             log_message(LOG_FILE, buff);
-            sprintf( buff, " INFO: total: %2.2f Wh. Power counters reset.", TotalPowerUsed );
+            sprintf( buff, " INFO: total: %3.1f Wh. Power counters reset.", TotalPowerUsed );
             log_message(LOG_FILE, buff);
             TotalPowerUsed = 0;
             NightlyPowerUsed = 0;
@@ -890,12 +890,12 @@ LogData(short HM) {
     /* Log data like so:
         Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,HM,
     PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
-    sprintf( data, ", %3.3f,%3.3f,%3.3f,%3.3f, %2d,%2d, %d,%d,%d,%d,%d, %3.3f,%3.3f",\
+    sprintf( data, ", %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
     Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, HM, CPump1,\
     CPump2, CValve, CHeater, CPowerByBattery, TotalPowerUsed, NightlyPowerUsed );
     log_message(DATA_FILE, data);
 
-    sprintf( data, ",Temp1,%3.3f\n_,Temp2,%3.3f\n_,Temp3,%3.3f\n_,Temp4,%3.3f\n_"\
+    sprintf( data, ",Temp1,%5.3f\n_,Temp2,%5.3f\n_,Temp3,%5.3f\n_,Temp4,%5.3f\n_"\
     ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n_"\
     ",TempWanted,%d\n_,ElectricityUsed,%lu\n_,ElectricityUsedNT,%lu",\
     Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
