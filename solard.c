@@ -168,6 +168,8 @@ unsigned long ProgramRunCycles  = 0;
 unsigned short current_timer_hour = 0;
 unsigned short current_month = 0;
 
+#define BOILER_MAX_TEMP      60
+
 struct structsolard_cfg
 {
     char    mode_str[MAXLEN];
