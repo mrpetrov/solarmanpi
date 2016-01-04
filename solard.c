@@ -206,6 +206,27 @@ DisableGPIOpins();
 /* end of forward-declared functions */
 
 void
+rangecheck_wanted_temp( int temp )
+{
+    if (temp < 20) temp = 20;
+    if (temp > 60) temp = 60;
+}
+
+void
+rangecheck_hour( int h )
+{
+    if (h < 0) temp = 0;
+    if (h > 23) temp = 23;
+}
+
+void
+rangecheck_day_of_month( int d )
+{
+    if (d < 1) temp = 1;
+    if (d > 28) temp = 28;
+}
+
+void
 SetDefaultCfg() {
     strcpy( solard_cfg.mode_str, "1");
     solard_cfg.mode = 1;
@@ -341,24 +362,31 @@ parse_config()
     strcpy( buff, solard_cfg.wanted_T_str );
     i = atoi( buff );
     if ( i ) solard_cfg.wanted_T = i;
+    rangecheck_wanted_temp( solard_cfg.wanted_T );
     strcpy( buff, solard_cfg.use_electric_start_hour_str );
     i = atoi( buff );
     solard_cfg.use_electric_start_hour = i;
+    rangecheck_hour( solard_cfg.use_electric_start_hour );
     strcpy( buff, solard_cfg.use_electric_stop_hour_str );
     i = atoi( buff );
     solard_cfg.use_electric_stop_hour = i;
+    rangecheck_hour( solard_cfg.use_electric_stop_hour );
     strcpy( buff, solard_cfg.keep_pump1_on_str );
     i = atoi( buff );
     solard_cfg.keep_pump1_on = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, solard_cfg.use_pump1_str );
     i = atoi( buff );
     solard_cfg.use_pump1 = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, solard_cfg.use_pump2_str );
     i = atoi( buff );
     solard_cfg.use_pump2 = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, solard_cfg.day_to_reset_Pcounters_str );
     i = atoi( buff );
     if ( i ) solard_cfg.day_to_reset_Pcounters = i;
+    rangecheck_day_of_month( solard_cfg.day_to_reset_Pcounters );
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
