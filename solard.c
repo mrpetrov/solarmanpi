@@ -929,10 +929,10 @@ SelectIdleMode() {
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
     if (TboilerHigh < BOILER_MAX_TEMP) {
        /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
-       if (Tkolektor > (TboilerLow+7.5)) wantP2on = 1;
+       if (Tkolektor > (TboilerLow+7.9)) wantP2on = 1;
        /* Furnace has heat in excess - open the valve so boiler can build up
        heat now and probably save on electricity use later on */
-       if ((Tkotel > (TboilerLow+5.9))||(Tkotel > TboilerHigh)) {
+       if ((Tkotel > (TboilerLow+6.9))||(Tkotel > (TboilerHigh+2.9))) {
           wantVon = 1;
           /* And if valve has been open for 2 minutes - turn furnace pump on */
           if (CValve && (SCValve > 9)) wantP1on = 1;
