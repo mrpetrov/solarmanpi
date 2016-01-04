@@ -34,8 +34,8 @@
     wanted_T=40
 
     # these define allowed hours to use electric heat
-    use_electric_start_hour=3
-    use_electric_stop_hour=4
+    use_electric_start_hour=4
+    use_electric_stop_hour=5
 
     # this tells to default pump1 to ON in idles
     keep_pump1_on=0
@@ -244,10 +244,10 @@ SetDefaultCfg() {
     solard_cfg.mode = 1;
     strcpy( solard_cfg.wanted_T_str, "40");
     solard_cfg.wanted_T = 40;
-    strcpy( solard_cfg.use_electric_start_hour_str, "3");
-    solard_cfg.use_electric_start_hour = 3;
-    strcpy( solard_cfg.use_electric_stop_hour_str, "4");
-    solard_cfg.use_electric_stop_hour = 4;
+    strcpy( solard_cfg.use_electric_start_hour_str, "4");
+    solard_cfg.use_electric_start_hour = 4;
+    strcpy( solard_cfg.use_electric_stop_hour_str, "5");
+    solard_cfg.use_electric_stop_hour = 5;
     strcpy( solard_cfg.keep_pump1_on_str, "0");
     solard_cfg.keep_pump1_on = 0;
     strcpy( solard_cfg.use_pump1_str, "1");
