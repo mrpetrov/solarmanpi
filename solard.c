@@ -87,6 +87,7 @@
 #define GPIO_PIN_VALVE           27 /* P1-13 */
 /*                                     P1-14 == GROUND */
 #define GPIO_PIN_EL_HEATER       22 /* P1-15 */
+#define GPIO_PIN_FURNACE         23 /* P1-16 NOTE: Reserved for future implementation */
 #define GPIO_PIN_UPS_POWERED     25 /* P1-22 */
 
 /* Maximum difference allowed for data received from sensors between reads, C */
