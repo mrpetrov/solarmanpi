@@ -1024,9 +1024,9 @@ SelectIdleMode() {
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
-    /* In the last 2 hours of night energy tariff heat up boiler until the lower sensor
+    /* If enabled, in the last 2 hours of night energy tariff heat up boiler until the lower sensor
     reads 12 C on top of desired temp, clamped at BOILER_MAX_TEMP, so that less day energy gets used */
-    if ( (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
+    if ( (solard_cfg.night_boost) && (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
         nightEnergyTemp = ((float)solard_cfg.wanted_T + 12);
         if (nightEnergyTemp > (float)BOILER_MAX_TEMP) { nightEnergyTemp = (float)BOILER_MAX_TEMP; }
         if (TboilerLow < nightEnergyTemp) { wantHon = 1; }
