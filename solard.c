@@ -206,6 +206,13 @@ DisableGPIOpins();
 /* end of forward-declared functions */
 
 void
+rangecheck_mode( int m )
+{
+    if (m < 0) m = 0;
+    if (m > 8) temp = 0;
+}
+
+void
 rangecheck_wanted_temp( int temp )
 {
     if (temp < 20) temp = 20;
@@ -359,6 +366,7 @@ parse_config()
     strcpy( buff, solard_cfg.mode_str );
     i = atoi( buff );
     solard_cfg.mode = i;
+    rangecheck_mode( solard_cfg.mode );
     strcpy( buff, solard_cfg.wanted_T_str );
     i = atoi( buff );
     if ( i ) solard_cfg.wanted_T = i;
