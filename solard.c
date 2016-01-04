@@ -40,7 +40,10 @@
     # this tells to default pump1 to ON in idles
     keep_pump1_on=0
 
-    # control the use of solar pump
+    # master control of pump 1 (furnace)
+    use_pump1=1
+
+    # master control of pump 2 (solar collector)
     use_pump2=1
 
     # day of month to reset power used counters
@@ -182,6 +185,8 @@ struct structsolard_cfg
     int     use_electric_stop_hour;
     char    keep_pump1_on_str[MAXLEN];
     int     keep_pump1_on;
+    char    use_pump1_str[MAXLEN];
+    int     use_pump1;
     char    use_pump2_str[MAXLEN];
     int     use_pump2;
     char    day_to_reset_Pcounters_str[MAXLEN];
@@ -212,6 +217,8 @@ SetDefaultCfg() {
     solard_cfg.use_electric_stop_hour = 4;
     strcpy( solard_cfg.keep_pump1_on_str, "0");
     solard_cfg.keep_pump1_on = 0;
+    strcpy( solard_cfg.use_pump1_str, "1");
+    solard_cfg.use_pump1 = 1;
     strcpy( solard_cfg.use_pump2_str, "1");
     solard_cfg.use_pump2 = 1;
     strcpy( solard_cfg.day_to_reset_Pcounters_str, "7");
@@ -316,6 +323,8 @@ parse_config()
             strncpy (solard_cfg.use_electric_stop_hour_str, value, MAXLEN);
             else if (strcmp(name, "keep_pump1_on")==0)
             strncpy (solard_cfg.keep_pump1_on_str, value, MAXLEN);
+            else if (strcmp(name, "use_pump1")==0)
+            strncpy (solard_cfg.use_pump1_str, value, MAXLEN);
             else if (strcmp(name, "use_pump2")==0)
             strncpy (solard_cfg.use_pump2_str, value, MAXLEN);
             else if (strcmp(name, "day_to_reset_Pcounters")==0)
@@ -341,6 +350,9 @@ parse_config()
     strcpy( buff, solard_cfg.keep_pump1_on_str );
     i = atoi( buff );
     solard_cfg.keep_pump1_on = i;
+    strcpy( buff, solard_cfg.use_pump1_str );
+    i = atoi( buff );
+    solard_cfg.use_pump1 = i;
     strcpy( buff, solard_cfg.use_pump2_str );
     i = atoi( buff );
     solard_cfg.use_pump2 = i;
@@ -350,13 +362,13 @@ parse_config()
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d, resetPday=%d",\
+        sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP1=%d, useP2=%d, resetPday=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
-        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
+        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump1, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
         } else {
-        sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d, resetPday=%d",\
+        sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP1=%d, useP2=%d, resetPday=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
-        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
+        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump1, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
     }
     log_message(LOG_FILE, buff);
 }
