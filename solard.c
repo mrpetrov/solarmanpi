@@ -214,7 +214,7 @@ void
 rangecheck_mode( int m )
 {
     if (m < 0) m = 0;
-    if (m > 8) temp = 0;
+    if (m > 8) m = 0;
 }
 
 void
@@ -227,15 +227,15 @@ rangecheck_wanted_temp( int temp )
 void
 rangecheck_hour( int h )
 {
-    if (h < 0) temp = 0;
-    if (h > 23) temp = 23;
+    if (h < 0) h = 0;
+    if (h > 23) h = 23;
 }
 
 void
 rangecheck_day_of_month( int d )
 {
-    if (d < 1) temp = 1;
-    if (d > 28) temp = 28;
+    if (d < 1) d = 1;
+    if (d > 28) d = 28;
 }
 
 void
