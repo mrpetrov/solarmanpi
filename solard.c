@@ -33,7 +33,7 @@
     # wanted_T: the desired temperature of water in tank
     wanted_T=40
 
-    # these define allowed hours to use electric heat
+    # these define allowed hours to use electric heater; if equal - electric heater is DISABLED
     use_electric_start_hour=4
     use_electric_stop_hour=5
 
