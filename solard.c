@@ -926,7 +926,9 @@ GetCurrentTime() {
             " stop %.2hu:59.", NEstart, NEstop );
             log_message(LOG_FILE, buff);
         }
-        /* among other things - manage power used counters */
+        /* among other things - manage power used counters; but make sure we do not
+        accidentaly reset power counters if solard is restarted on a reset day*/
+        if (!just_started) {
         strftime( buff, sizeof buff, "%e", t_struct );
         current_day_of_month = atoi( buff );
         if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
@@ -938,6 +940,7 @@ GetCurrentTime() {
             log_message(LOG_FILE, buff);
             TotalPowerUsed = 0;
             NightlyPowerUsed = 0;
+        }
         }
     }
 }
