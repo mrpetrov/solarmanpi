@@ -53,7 +53,7 @@
     night_boost=0
 */
 
-#define SOLARDVERSION    "3.8-rc3 2016-01-04"
+#define SOLARDVERSION    "3.8-rc4 2016-01-05"
 
 #include <sys/stat.h>
 #include <sys/types.h>
