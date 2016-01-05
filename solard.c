@@ -4,19 +4,19 @@
     * Raspberry Pi solar manager which uses 1wire and GPIO.
     * Plamen Petrov <plamen.sisi@gmail.com>
     *
-    * solard is Plamens's custom solar controller, based on the Raspberry Pi 2.
+    * solard is Plamen's custom solar controller, based on the Raspberry Pi 2.
     * Data is gathered and logged every 10 seconds from 4 DS18B20 waterproof sensors,
-    * controled are 4 relays via GPIO, and a GPIO pin is read for managing the power
-    * to Grundfoss UPS2 pumps, which if left alone block on power switch to battery.
-    * Remedy is to leave the pumps off for a couple of seconds on power failure (the
-    * UPS switches to battery fine), and then turn the pump back on. Log data is in
-    * CSV format, to be picked up by some sort of data collection/graphing tool, like
-    * collectd or similar.
-    * The daemon is controlled via its configuration file, which if need be - can
-    * be requested to be re-read while running. This is done by sending SIGUSR1
-    * signal to the daemon process. The event is noted in the log file.
-    * The logfile itself can be "grep"-ed for "ALARM:" to catch and notify of
-    * notable events, recorded by the daemon.
+    * 4 relays are controlled via GPIO, and a GPIO pin is read for managing the power
+    * to Grundfoss UPS2 pumps.
+    * Pumps power was thought to need to be managed, but it turned out one of the 2
+    * pumps on site was defective - it was replaced, and now this program just logs if
+    * grid power fails. Log data is in CSV format, to be picked up by some sort of data
+    * collection/graphing tool, like collectd or similar.
+    * The daemon is controlled via its configuration file, which solard can be told to
+    * re-read and parse while running to change config in flight. This is done by
+    * sending SIGUSR1 signal to the daemon process. The event is noted in the log file.
+    * The logfile itself can be "grep"-ed for "ALARM" and "INFO" to catch and notify
+    * of notable events, recorded by the daemon.
 */
 
 /* example for /etc/solard.cfg config file (these are the DEFAULTS):
@@ -110,10 +110,11 @@
 
 char *sensor_paths[] = { SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
 
-/* var to keep track of read errors, so if a threshold is reached - the
-program can safely shut down everything, send notification and bail out;
-initialised with borderline value to trigger immediately on errors during
-start-up; the program logic tolerates 1 minute of missing sensor data */
+/*  var to keep track of read errors, so if a threshold is reached - the
+    program can safely shut down everything, send notification and bail out;
+    initialised with borderline value to trigger immediately on errors during
+    start-up; the program logic tolerates 1 minute of missing sensor data
+*/
 unsigned short sensor_read_errors[TOTALSENSORS] = { 4, 4, 4, 4 };
 
 /* current sensors temperatures - e.g. values from last read */
@@ -929,18 +930,18 @@ GetCurrentTime() {
         /* among other things - manage power used counters; but make sure we do not
         accidentaly reset power counters if solard is restarted on a reset day*/
         if (!just_started) {
-        strftime( buff, sizeof buff, "%e", t_struct );
-        current_day_of_month = atoi( buff );
-        if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
-            /* if it is the right day - print power usage in log and reset counters */
-            sprintf( buff, " INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
-            NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
-            log_message(LOG_FILE, buff);
-            sprintf( buff, " INFO: total: %3.1f Wh. Power counters reset.", TotalPowerUsed );
-            log_message(LOG_FILE, buff);
-            TotalPowerUsed = 0;
-            NightlyPowerUsed = 0;
-        }
+            strftime( buff, sizeof buff, "%e", t_struct );
+            current_day_of_month = atoi( buff );
+            if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
+                /* if it is the right day - print power usage in log and reset counters */
+                sprintf( buff, " INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
+                NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
+                log_message(LOG_FILE, buff);
+                sprintf( buff, " INFO: total: %3.1f Wh. Power counters reset.", TotalPowerUsed );
+                log_message(LOG_FILE, buff);
+                TotalPowerUsed = 0;
+                NightlyPowerUsed = 0;
+            }
         }
     }
 }
@@ -998,15 +999,15 @@ SelectIdleMode() {
     if ((Tkotel > 11.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
     if (TboilerHigh < BOILER_MAX_TEMP) {
-       /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
-       if (Tkolektor > (TboilerLow+7.9)) wantP2on = 1;
-       /* Furnace has heat in excess - open the valve so boiler can build up
-       heat now and probably save on electricity use later on */
-       if ((Tkotel > (TboilerLow+6.9))||(Tkotel > (TboilerHigh+2.9))) {
-          wantVon = 1;
-          /* And if valve has been open for 2 minutes - turn furnace pump on */
-          if (CValve && (SCValve > 9)) wantP1on = 1;
-       }
+        /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
+        if (Tkolektor > (TboilerLow+7.9)) wantP2on = 1;
+        /* Furnace has heat in excess - open the valve so boiler can build up
+        heat now and probably save on electricity use later on */
+        if ((Tkotel > (TboilerLow+6.9))||(Tkotel > (TboilerHigh+2.9))) {
+            wantVon = 1;
+            /* And if valve has been open for 2 minutes - turn furnace pump on */
+            if (CValve && (SCValve > 9)) wantP1on = 1;
+        }
     }
     /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
     if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
@@ -1022,7 +1023,7 @@ SelectIdleMode() {
     /* Turn furnace pump on every 24 hours */
     if ( (!CPump1) && (SCPump1 > (6*60*24)) ) wantP1on = 1;
     /* Forcibly run solar pump once every day between 11:00 and 12:59 */
-    if ( (!CPump2) && (SCPump2 > (6*900)) && 
+    if ( (!CPump2) && (SCPump2 > (6*900)) &&
     (current_timer_hour >= 11) && (current_timer_hour <= 12)) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
