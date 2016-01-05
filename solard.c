@@ -988,13 +988,13 @@ SelectIdleMode() {
     /* If ETC is VERY cold - turn pump on every 60 min below -8 C to prevent freezing */
     /* FIXME: this uses boiler heat - the balancing point needs to be found */
     if ((Tkolektor < -7.9)&&(!CPump2)&&(SCPump2 > (6*60))) wantP2on = 1;
-    /* Furnace is above 50 - at these temps always run the pump */
-    if (Tkotel > 50) wantP1on = 1;
-    /* Furnace is above 45 and rising - turn pump on */
-    if ((Tkotel > 44.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
-    /* Furnace is above 36 and rising slowly - turn pump on */
-    if ((Tkotel > 31.9)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
-    /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
+    /* Furnace is above 45 C - at these temps always run the pump */
+    if (Tkotel > 45) wantP1on = 1;
+    /* Furnace is above 36 C and rising - turn pump on */
+    if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
+    /* Furnace is above 28 C and rising slowly - turn pump on */
+    if ((Tkotel > 27.9)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
+    /* Furnace is above 12 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 11.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
     if (TboilerHigh < BOILER_MAX_TEMP) {
