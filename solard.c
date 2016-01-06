@@ -51,6 +51,9 @@
 
     # night energy heat boosting
     night_boost=0
+    
+    # boiler absolute maximum temp
+    abs_max=60
 */
 
 #define SOLARDVERSION    "3.8-rc4 2016-01-05"
@@ -197,6 +200,8 @@ struct structsolard_cfg
     int     day_to_reset_Pcounters;
     char    night_boost_str[MAXLEN];
     int     night_boost;
+    char    abs_max_str[MAXLEN];
+    int     abs_max;
 }
 structsolard_cfg;
 
@@ -221,8 +226,15 @@ rangecheck_mode( int m )
 void
 rangecheck_wanted_temp( int temp )
 {
-    if (temp < 20) temp = 20;
-    if (temp > 60) temp = 60;
+    if (temp < 10) temp = 10;
+    if (temp > 50) temp = 50;
+}
+
+void
+rangecheck_abs_max_temp( int t )
+{
+    if (t < 30) t = 30;
+    if (t > 65) t = 65;
 }
 
 void
@@ -259,6 +271,8 @@ SetDefaultCfg() {
     solard_cfg.day_to_reset_Pcounters = 7;
     strcpy( solard_cfg.night_boost_str, "0");
     solard_cfg.night_boost = 0;
+    strcpy( solard_cfg.abs_max_str, "60");
+    solard_cfg.abs_max = 60;
 }
 
 short
@@ -367,6 +381,8 @@ parse_config()
             strncpy (solard_cfg.day_to_reset_Pcounters_str, value, MAXLEN);
             else if (strcmp(name, "night_boost")==0)
             strncpy (solard_cfg.night_boost_str, value, MAXLEN);
+            else if (strcmp(name, "abs_max")==0)
+            strncpy (solard_cfg.abs_max_str, value, MAXLEN);
         }
         /* Close file */
         fclose (fp);
@@ -409,20 +425,24 @@ parse_config()
     i = atoi( buff );
     solard_cfg.night_boost = i;
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
+    strcpy( buff, solard_cfg.abs_max_str );
+    i = atoi( buff );
+    solard_cfg.abs_max = i;
+    rangecheck_abs_max_temp( solard_cfg.abs_max );
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
         sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d,"\
-        "keepP1on=%d, useP1=%d, useP2=%d, rstPday=%d, NB=%d",\
+        "keepP1on=%d, useP1=%d, useP2=%d, rstPday=%d, NB=%d, absMAX=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
         solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump1, \
-        solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters, solard_cfg.night_boost );
+        solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters, solard_cfg.night_boost, solard_cfg.abs_max );
         } else {
         sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d,"\
-        "keepP1on=%d, useP1=%d, useP2=%d, rstPday=%d, NB=%d",\
+        "keepP1on=%d, useP1=%d, useP2=%d, rstPday=%d, NB=%d, absMAX=%d",\
         solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
         solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump1, \
-        solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters, solard_cfg.night_boost );
+        solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters, solard_cfg.night_boost, solard_cfg.abs_max );
     }
     log_message(LOG_FILE, buff);
 }
