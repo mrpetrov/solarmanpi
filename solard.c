@@ -1022,18 +1022,19 @@ SelectIdleMode() {
         heat now and probably save on electricity use later on */
         if ((Tkotel > (TboilerLow+6.9))||(Tkotel > (TboilerHigh+2.9))) {
             wantVon = 1;
-            /* And if valve has been open for 2 minutes - turn furnace pump on */
-            if (CValve && (SCValve > 9)) wantP1on = 1;
+            /* And if valve has been open for 1 minutes - turn furnace pump on */
+            if (CValve && (SCValve > 6)) wantP1on = 1;
         }
     }
     /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
     if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
-    /* Try to heat the house by taking heat from boiler but leave at least 6 C extra on
-    top of the wanted temp - turn furnace pump on and open the valve */
+    /* Try to heat the house by taking heat from boiler but leave at least 2 C extra on
+    top of the wanted temp - open the valve and turn furnace pump on */
     if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
-    (TboilerHigh > ((float)solard_cfg.wanted_T + 6)) && (TboilerLow > Tkotel) ) {
-        wantP1on = 1;
+    (TboilerHigh > ((float)solard_cfg.wanted_T + 2)) && (TboilerLow > (Tkotel + 7.9)) ) {
         wantVon = 1;
+        /* And if valve has been open for 1 minute - turn furnace pump on */
+        if (CValve && (SCValve > 6)) wantP1on = 1;
     }
     /* Keep valve open while there is still heat to exploit */
     if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
