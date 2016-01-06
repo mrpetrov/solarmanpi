@@ -1038,9 +1038,8 @@ SelectIdleMode() {
         /* And if valve has been open for 1 minute - turn furnace pump on */
         if (CValve && (SCValve > 6)) wantP1on = 1;
     }
-    /* Forcibly run solar pump once every day between 11:00 and 12:59 */
-    if ( (!CPump2) && (SCPump2 > (6*900)) &&
-    (current_timer_hour >= 11) && (current_timer_hour <= 12)) wantP2on = 1;
+    /* Run solar pump once every day at 11'something if it stayed off the past 16 hours*/
+    if ( (current_timer_hour == 11) && (!CPump2) && (SCPump2 > (6*60*16)) ) wantP2on = 1;
     if (solard_cfg.keep_pump1_on) {
         wantP1on = 1;
     }
