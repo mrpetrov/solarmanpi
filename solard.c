@@ -425,6 +425,7 @@ parse_config()
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, solard_cfg.abs_max_str );
     i = atoi( buff );
+    if (i < (solard_cfg.wanted_T+3)) { i = solard_cfg.wanted_T+3; }
     solard_cfg.abs_max = i;
     rangecheck_abs_max_temp( solard_cfg.abs_max );
 
