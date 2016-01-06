@@ -1015,7 +1015,7 @@ SelectIdleMode() {
     /* Furnace is above 12 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 11.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
-    if (TboilerHigh <= (float)solard_cfg.abs_max) {
+    if (TboilerHigh < (float)solard_cfg.abs_max) {
         /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
         if (Tkolektor > (TboilerLow+7.9)) wantP2on = 1;
         /* Furnace has heat in excess - open the valve so boiler can build up
@@ -1028,16 +1028,16 @@ SelectIdleMode() {
     }
     /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
     if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
+    /* Keep valve open while there is still heat to exploit */
+    if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
     /* Try to heat the house by taking heat from boiler but leave at least 2 C extra on
-    top of the wanted temp - open the valve and turn furnace pump on */
+    top of the wanted temp - first open the valve, then turn furnace pump on */
     if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
     (TboilerHigh > ((float)solard_cfg.wanted_T + 2)) && (TboilerLow > (Tkotel + 7.9)) ) {
         wantVon = 1;
         /* And if valve has been open for 1 minute - turn furnace pump on */
         if (CValve && (SCValve > 6)) wantP1on = 1;
     }
-    /* Keep valve open while there is still heat to exploit */
-    if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
     /* Forcibly run solar pump once every day between 11:00 and 12:59 */
     if ( (!CPump2) && (SCPump2 > (6*900)) &&
     (current_timer_hour >= 11) && (current_timer_hour <= 12)) wantP2on = 1;
