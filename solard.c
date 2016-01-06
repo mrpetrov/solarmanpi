@@ -1015,7 +1015,7 @@ SelectIdleMode() {
     /* Furnace is above 12 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 11.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
-    if (TboilerHigh < solard_cfg.abs_max) {
+    if (TboilerHigh <= (float)solard_cfg.abs_max) {
         /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
         if (Tkolektor > (TboilerLow+7.9)) wantP2on = 1;
         /* Furnace has heat in excess - open the valve so boiler can build up
