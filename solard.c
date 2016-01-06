@@ -51,7 +51,7 @@
 
     # night energy heat boosting
     night_boost=0
-    
+
     # boiler absolute maximum temp
     abs_max=52
 */
@@ -1037,12 +1037,16 @@ SelectIdleMode() {
     }
     /* Keep valve open while there is still heat to exploit */
     if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
-    /* Turn furnace pump on every 24 hours */
-    if ( (!CPump1) && (SCPump1 > (6*60*24)) ) wantP1on = 1;
     /* Forcibly run solar pump once every day between 11:00 and 12:59 */
     if ( (!CPump2) && (SCPump2 > (6*900)) &&
     (current_timer_hour >= 11) && (current_timer_hour <= 12)) wantP2on = 1;
-    if (solard_cfg.keep_pump1_on) wantP1on = 1;
+    if (solard_cfg.keep_pump1_on) {
+        wantP1on = 1;
+    }
+    else {
+        /* Turn furnace pump on every 24 hours */
+        if ( (!CPump1) && (SCPump1 > (6*60*24)) ) wantP1on = 1;
+    }
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
     /* If enabled, in the last 2 hours of night energy tariff heat up boiler until the lower sensor
