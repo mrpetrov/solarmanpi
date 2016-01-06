@@ -178,8 +178,6 @@ unsigned long ProgramRunCycles  = 0;
 unsigned short current_timer_hour = 0;
 unsigned short current_month = 0;
 
-#define BOILER_MAX_TEMP      60
-
 struct structsolard_cfg
 {
     char    mode_str[MAXLEN];
@@ -1018,7 +1016,7 @@ SelectIdleMode() {
     /* Furnace is above 12 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 11.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
-    if (TboilerHigh < BOILER_MAX_TEMP) {
+    if (TboilerHigh < solard_cfg.abs_max) {
         /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
         if (Tkolektor > (TboilerLow+7.9)) wantP2on = 1;
         /* Furnace has heat in excess - open the valve so boiler can build up
@@ -1049,10 +1047,10 @@ SelectIdleMode() {
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
     /* If enabled, in the last 2 hours of night energy tariff heat up boiler until the lower sensor
-    reads 12 C on top of desired temp, clamped at BOILER_MAX_TEMP, so that less day energy gets used */
+    reads 12 C on top of desired temp, clamped at solard_cfg.abs_max, so that less day energy gets used */
     if ( (solard_cfg.night_boost) && (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
         nightEnergyTemp = ((float)solard_cfg.wanted_T + 12);
-        if (nightEnergyTemp > (float)BOILER_MAX_TEMP) { nightEnergyTemp = (float)BOILER_MAX_TEMP; }
+        if (nightEnergyTemp > (float)solard_cfg.abs_max) { nightEnergyTemp = (float)solard_cfg.abs_max; }
         if (TboilerLow < nightEnergyTemp) { wantHon = 1; }
     }
 
