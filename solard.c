@@ -53,7 +53,7 @@
     night_boost=0
     
     # boiler absolute maximum temp
-    abs_max=60
+    abs_max=52
 */
 
 #define SOLARDVERSION    "3.8-rc4 2016-01-05"
@@ -269,8 +269,8 @@ SetDefaultCfg() {
     solard_cfg.day_to_reset_Pcounters = 7;
     strcpy( solard_cfg.night_boost_str, "0");
     solard_cfg.night_boost = 0;
-    strcpy( solard_cfg.abs_max_str, "60");
-    solard_cfg.abs_max = 60;
+    strcpy( solard_cfg.abs_max_str, "52");
+    solard_cfg.abs_max = 52;
 }
 
 short
