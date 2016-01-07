@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# append new data from solard log file in RAM drive to /var/log
+cp /run/shm/solard_data.log /var/log/solard_data.log.new
+rm /run/shm/solard_data.log
+cat /var/log/solard_data.log.new >> /var/log/solard_data.log
+rm /var/log/solard_data.log.new
+
+#EOF
