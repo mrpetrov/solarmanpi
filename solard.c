@@ -977,11 +977,11 @@ void
 LogData(short HM) {
     static char data[280];
     /* Log data like so:
-        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,HM,
+        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,NIGHTBOOST,HM,
     PUMP1,PUMP2,VALVE,EL_HEATER,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
-    sprintf( data, ", %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
-    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, HM, CPump1,\
-    CPump2, CValve, CHeater, CPowerByBattery, TotalPowerUsed, NightlyPowerUsed );
+    sprintf( data, ", %6.3f,%6.3f,%6.3f,%6.3f, %2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
+    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, solard_cfg.night_boost,\
+    HM, CPump1, CPump2, CValve, CHeater, CPowerByBattery, TotalPowerUsed, NightlyPowerUsed );
     log_message(DATA_FILE, data);
 
     sprintf( data, ",Temp1,%5.3f\n_,Temp2,%5.3f\n_,Temp3,%5.3f\n_,Temp4,%5.3f\n_"\
