@@ -1,5 +1,15 @@
 #!/bin/bash
 
-# solarmanpi build script
-gcc -O3 -Wall -o solard solard.c
+builddir=/home/pi/compile/solard
+
+cd $builddir
+if [ -e solard ]
+then
+    rm solard
+fi
+date
+time gcc -D_FORTIFY_SOURCE=2 -Wall -Wno-unused-result -O3 -o solard solard.c
 ls -l
+
+builddir=
+#EOF
