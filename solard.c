@@ -986,10 +986,10 @@ LogData(short HM) {
 
     sprintf( data, ",Temp1,%5.3f\n_,Temp2,%5.3f\n_,Temp3,%5.3f\n_,Temp4,%5.3f\n_"\
     ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n_"\
-    ",TempWanted,%d\n_,ElectricityUsed,%lu\n_,ElectricityUsedNT,%lu",\
+    ",TempWanted,%d\n_,ElectricityUsed,%5.3f\n_,ElectricityUsedNT,%5.3f",\
     Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
-    CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T,\
-    (long)TotalPowerUsed, (long)NightlyPowerUsed );
+    CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T,
+    TotalPowerUsed, NightlyPowerUsed );
     log_msg_ovr(TABLE_FILE, data);
 }
 
