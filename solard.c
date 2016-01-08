@@ -37,8 +37,8 @@
     use_electric_start_hour=4
     use_electric_stop_hour=5
 
-    # this tells to default pump1 to ON in idles
-    keep_pump1_on=0
+    # set this to non-zero and pump 1 (furnace) will never be switched off
+    pump1_always_on=0
 
     # master control of pump 1 (furnace)
     use_pump1=1
@@ -188,8 +188,8 @@ struct structsolard_cfg
     int     use_electric_start_hour;
     char    use_electric_stop_hour_str[MAXLEN];
     int     use_electric_stop_hour;
-    char    keep_pump1_on_str[MAXLEN];
-    int     keep_pump1_on;
+    char    pump1_always_on_str[MAXLEN];
+    int     pump1_always_on;
     char    use_pump1_str[MAXLEN];
     int     use_pump1;
     char    use_pump2_str[MAXLEN];
@@ -259,8 +259,8 @@ SetDefaultCfg() {
     solard_cfg.use_electric_start_hour = 4;
     strcpy( solard_cfg.use_electric_stop_hour_str, "5");
     solard_cfg.use_electric_stop_hour = 5;
-    strcpy( solard_cfg.keep_pump1_on_str, "0");
-    solard_cfg.keep_pump1_on = 0;
+    strcpy( solard_cfg.pump1_always_on_str, "0");
+    solard_cfg.pump1_always_on = 0;
     strcpy( solard_cfg.use_pump1_str, "1");
     solard_cfg.use_pump1 = 1;
     strcpy( solard_cfg.use_pump2_str, "1");
@@ -369,8 +369,8 @@ parse_config()
             strncpy (solard_cfg.use_electric_start_hour_str, value, MAXLEN);
             else if (strcmp(name, "use_electric_stop_hour")==0)
             strncpy (solard_cfg.use_electric_stop_hour_str, value, MAXLEN);
-            else if (strcmp(name, "keep_pump1_on")==0)
-            strncpy (solard_cfg.keep_pump1_on_str, value, MAXLEN);
+            else if (strcmp(name, "pump1_always_on")==0)
+            strncpy (solard_cfg.pump1_always_on_str, value, MAXLEN);
             else if (strcmp(name, "use_pump1")==0)
             strncpy (solard_cfg.use_pump1_str, value, MAXLEN);
             else if (strcmp(name, "use_pump2")==0)
@@ -403,9 +403,9 @@ parse_config()
     i = atoi( buff );
     solard_cfg.use_electric_stop_hour = i;
     rangecheck_hour( solard_cfg.use_electric_stop_hour );
-    strcpy( buff, solard_cfg.keep_pump1_on_str );
+    strcpy( buff, solard_cfg.pump1_always_on_str );
     i = atoi( buff );
-    solard_cfg.keep_pump1_on = i;
+    solard_cfg.pump1_always_on = i;
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, solard_cfg.use_pump1_str );
     i = atoi( buff );
@@ -439,8 +439,8 @@ parse_config()
     }
     log_message(LOG_FILE, buff);
     /* Prepare log message part 2 and write it to log file */
-    sprintf( buff, " INFO: keep furnace pump on=%d, use furnace pump=%d, use solar pump=%d, reset P counters day=%d, "\
-    "night boiler boost=%d, absMAX=%d", solard_cfg.keep_pump1_on, solard_cfg.use_pump1, solard_cfg.use_pump2,\
+    sprintf( buff, " INFO: furnace pump always on=%d, use furnace pump=%d, use solar pump=%d, reset P counters day=%d, "\
+    "night boiler boost=%d, absMAX=%d", solard_cfg.pump1_always_on, solard_cfg.use_pump1, solard_cfg.use_pump2,\
     solard_cfg.day_to_reset_Pcounters, solard_cfg.night_boost, solard_cfg.abs_max );
     log_message(LOG_FILE, buff);
 }
@@ -1041,7 +1041,7 @@ SelectIdleMode() {
     }
     /* Run solar pump once every day at 11'something if it stayed off the past 16 hours*/
     if ( (current_timer_hour == 11) && (!CPump2) && (SCPump2 > (6*60*16)) ) wantP2on = 1;
-    if (solard_cfg.keep_pump1_on) {
+    if (solard_cfg.pump1_always_on) {
         wantP1on = 1;
     }
     else {
