@@ -1003,27 +1003,27 @@ SelectIdleMode() {
     float nightEnergyTemp = 0;
 
     /* If furnace is cold - turn pump every 30 min on to prevent freezing */
-    if ((Tkotel < 2.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
+    if ((Tkotel < 3)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
     /* If ETC is VERY cold - turn pump on every 60 min below -8 C to prevent freezing */
     /* FIXME: this uses boiler heat - the balancing point needs to be found */
-    if ((Tkolektor < -7.9)&&(!CPump2)&&(SCPump2 > (6*60))) wantP2on = 1;
+    if ((Tkolektor < -8)&&(!CPump2)&&(SCPump2 > (6*60))) wantP2on = 1;
     /* Furnace is above 45 C - at these temps always run the pump */
     if (Tkotel > 45) wantP1on = 1;
     /* Furnace is above 36 C and rising - turn pump on */
-    if ((Tkotel > 35.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
-    /* Furnace is above 28 C and rising slowly - turn pump on */
-    if ((Tkotel > 27.9)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
-    /* Furnace is above 12 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
-    if ((Tkotel > 11.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
+    if ((Tkotel > 36)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
+    /* Furnace is above 27 C and rising slowly - turn pump on */
+    if ((Tkotel > 27)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
+    /* Furnace is above 10 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
+    if ((Tkotel > 10)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
     if (TboilerHigh < (float)solard_cfg.abs_max) {
         /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
-        if (Tkolektor > (TboilerLow+7.9)) wantP2on = 1;
+        if (Tkolektor > (TboilerLow+8)) wantP2on = 1;
         /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
         if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
         /* Furnace has heat in excess - open the valve so boiler can build up
         heat now and probably save on electricity use later on */
-        if ((Tkotel > (TboilerLow+6.9))||(Tkotel > (TboilerHigh+2.9))) {
+        if ((Tkotel > (TboilerLow+5))||(Tkotel > (TboilerHigh+2))) {
             wantVon = 1;
             /* And if valve has been open for 1 minutes - turn furnace pump on */
             if (CValve && (SCValve > 6)) wantP1on = 1;
@@ -1034,7 +1034,7 @@ SelectIdleMode() {
     /* Try to heat the house by taking heat from boiler but leave at least 2 C extra on
     top of the wanted temp - first open the valve, then turn furnace pump on */
     if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
-    (TboilerHigh > ((float)solard_cfg.wanted_T + 2)) && (TboilerLow > (Tkotel + 7.9)) ) {
+    (TboilerHigh > ((float)solard_cfg.wanted_T + 2)) && (TboilerLow > (Tkotel + 8)) ) {
         wantVon = 1;
         /* And if valve has been open for 1 minute - turn furnace pump on */
         if (CValve && (SCValve > 6)) wantP1on = 1;
@@ -1077,13 +1077,13 @@ SelectHeatingMode() {
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-    if ((Tkolektor > (TboilerLow + 14.9))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, ECT temp must be at least 15 C higher than the boiler */
+    if ((Tkolektor > (TboilerLow + 13))&&(Tkolektor > Tkotel)) {
+        /* To enable solar heating, ECT temp must be at least 12 C higher than the boiler */
         wantP2on = 1;
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerLow + 9.9)) {
+        if (Tkotel > (TboilerLow + 9)) {
             /* The furnace is hot enough - use it */
             wantVon = 1;
             /* And if valve has been open for 2 minutes - turn furnace pump on */
