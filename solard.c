@@ -910,6 +910,7 @@ GetCurrentTime() {
     time_t t;
     struct tm *t_struct;
     short adjusted = 0;
+    short must_check = 0;
     unsigned short current_day_of_month = 0;
 
     t = time(NULL);
@@ -918,10 +919,11 @@ GetCurrentTime() {
 
     current_timer_hour = atoi( buff );
 
+    if ((current_timer_hour == 8) && ((ProgramRunCycles % (6*60)) == 0)) must_check = 1;
+
     /* adjust night tariff start and stop hours at program start and
     every day sometime between 8:00 and 9:00 */
-    if ( ( just_started ) ||
-    ((current_timer_hour == 8) && ((ProgramRunCycles % (6*60)) == 0)) ) {
+    if (( just_started ) || ( must_check )) {
         strftime( buff, sizeof buff, "%m", t_struct );
         current_month = atoi( buff );
         if ((current_month >= 4)&&(current_month <= 10)) {
@@ -945,13 +947,13 @@ GetCurrentTime() {
             " stop %.2hu:59.", NEstart, NEstop );
             log_message(LOG_FILE, buff);
         }
-        /* among other things - manage power used counters; but make sure we do not
-        accidentaly reset power counters if solard is restarted on a reset day*/
-        if (!just_started) {
+        /* among other things - manage power used counters; only check the one
+        time during the day at 8'something...*/
+        if (must_check) {
             strftime( buff, sizeof buff, "%e", t_struct );
             current_day_of_month = atoi( buff );
             if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
-                /* if it is the right day - print power usage in log and reset counters */
+                /*...if it is the correct day of month - if so: log gathered data and reset counters */
                 sprintf( buff, " INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
                 NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
                 log_message(LOG_FILE, buff);
