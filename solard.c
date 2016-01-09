@@ -1277,7 +1277,7 @@ main(int argc, char *argv[])
         if ( iter == 30 ) {
             iter = 0;
             GetCurrentTime();
-            /* and increase counter controlling writing out persitent power use data */
+            /* and increase counter controlling writing out persistent power use data */
             iter_P++;
             if ( iter_P == 2) {
                 iter_P = 0;
