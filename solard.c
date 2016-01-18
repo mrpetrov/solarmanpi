@@ -1020,7 +1020,7 @@ SelectIdleMode() {
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
     if (TboilerHigh < (float)solard_cfg.abs_max) {
         /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
-        if (Tkolektor > (TboilerLow+8)) wantP2on = 1;
+        if (Tkolektor > (TboilerLow+5)) wantP2on = 1;
         /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
         if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
         /* Furnace has heat in excess - open the valve so boiler can build up
