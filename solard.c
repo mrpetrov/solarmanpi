@@ -178,6 +178,9 @@ unsigned long ProgramRunCycles  = 0;
 unsigned short current_timer_hour = 0;
 unsigned short current_month = 0;
 
+/* array storing the hour at wich to make the solar pump daily run for each month */
+unsigned short pump_start_hour_for[13] = { 11, 14, 13, 12, 11, 10, 9, 9, 10, 11, 12, 13, 14 };
+
 struct structsolard_cfg
 {
     char    mode_str[MAXLEN];
@@ -1042,8 +1045,10 @@ SelectIdleMode() {
         /* And if valve has been open for 1 minute - turn furnace pump on */
         if (CValve && (SCValve > 6)) wantP1on = 1;
     }
-    /* Run solar pump once every day at 14'something if it stayed off the past 16 hours*/
-    if ( (current_timer_hour == 14) && (!CPump2) && (SCPump2 > (6*60*16)) ) wantP2on = 1;
+    /* Run solar pump once every day at the predefined hour for current month (see array definition)
+    if it stayed off the past 16 hours*/
+    if ( (current_timer_hour == pump_start_hour_for[current_month]) && 
+         (!CPump2) && (SCPump2 > (6*60*16)) ) wantP2on = 1;
     if (solard_cfg.pump1_always_on) {
         wantP1on = 1;
     }
