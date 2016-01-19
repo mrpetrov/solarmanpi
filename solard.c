@@ -982,18 +982,19 @@ void
 LogData(short HM) {
     static char data[280];
     /* Log data like so:
-        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,NIGHTBOOST,HM,
+        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,BOILERABSMAX,NIGHTBOOST,HM,
     PUMP1,PUMP2,VALVE,EL_HEATER,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
-    sprintf( data, ", %6.3f,%6.3f,%6.3f,%6.3f, %2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
-    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, solard_cfg.night_boost,\
-    HM, CPump1, CPump2, CValve, CHeater, CPowerByBattery, TotalPowerUsed, NightlyPowerUsed );
+    sprintf( data, ", %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
+    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, solard_cfg.abs_max, \
+    solard_cfg.night_boost, HM, CPump1, CPump2, CValve, CHeater, CPowerByBattery, \
+    TotalPowerUsed, NightlyPowerUsed );
     log_message(DATA_FILE, data);
 
-    sprintf( data, ",Temp1,%5.3f\n_,Temp2,%5.3f\n_,Temp3,%5.3f\n_,Temp4,%5.3f\n_"\
-    ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n_"\
-    ",TempWanted,%d\n_,ElectricityUsed,%5.3f\n_,ElectricityUsedNT,%5.3f",\
+    sprintf( data, ",Temp1,%5.3f\n_,Temp2,%5.3f\n_,Temp3,%5.3f\n_,Temp4,%5.3f\n"\
+    "_,Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n"\
+    "_,TempWanted,%d\n_,BoilerTabsMax,%d\n_,ElectricityUsed,%5.3f\n_,ElectricityUsedNT,%5.3f",\
     Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
-    CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T,
+    CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T, solard_cfg.abs_max,\
     TotalPowerUsed, NightlyPowerUsed );
     log_msg_ovr(TABLE_FILE, data);
 }
