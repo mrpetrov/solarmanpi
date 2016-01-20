@@ -1047,9 +1047,9 @@ SelectIdleMode() {
         if (CValve && (SCValve > 6)) wantP1on = 1;
     }
     /* Run solar pump once every day at the predefined hour for current month (see array definition)
-    if it stayed off the past 16 hours*/
+    if it stayed off the past 4 hours*/
     if ( (current_timer_hour == pump_start_hour_for[current_month]) && 
-         (!CPump2) && (SCPump2 > (6*60*16)) ) wantP2on = 1;
+         (!CPump2) && (SCPump2 > (6*60*4)) ) wantP2on = 1;
     if (solard_cfg.pump1_always_on) {
         wantP1on = 1;
     }
