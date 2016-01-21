@@ -1,3 +1,86 @@
+3.8 2016-01-21
+Summary: This dev cycle contains a lot of actual fixes, because finally
+the snow and cold came to BG, and all the logic of solard was tested.
+This release adds a lot of configurability, for example the nightly heat
+build-up of 3.7 now can be enabled/disabled, and its top temperature is
+settable too - there is now a config file option "abs_max". For all the
+new config file options - see the included in solard.c example config.
+In tone with all the "configurability" improvements there are a lot of
+little code optimisations here and there, as well as some typos fixes.
+There is an idea that solard could be tought to control a pellet burner,
+and with that in mind - there are some provisions in this general
+direction, but for now - it just that - an idea.
+Another little thing - the git tree now contains some usefull files
+worth checking out.
+
+Shortlog of changes since 3.7:
+    Make solar pump run once a day - between 11:00 and 12:59
+    Emergencies: allow furnace to reach up to 68 C
+    Effeciency: suck up every last bit of heat in boiler
+    Consolidate 2 idle heating checks
+    Fix whitespace
+    Tweak ETC (not ECT) antifreeze protection
+    Make boiler max temp easier to tweak
+    Use boiler max temp const instead of hardcoded numbers
+    Correctly use sprintf format specifiers... and make log columnier to read
+    One more BOILER_MAX_TEMP usage place fix
+    Version 3.8-rc2
+    Further tune idle boiler heating from furnace
+    Rename GPIO pins constants
+    Reserve a Pi GPIO pin for future expansion
+    Introduce config setting "use_pump1" master control
+    Put "use_pump1" config setting in control of pump 1 use
+    Implement rangechecking in parse_config to avoid silly happenings
+    Add and use missing mode rangecheck in parse_config
+    Add new "night_boost" config option
+    Control the "night boosting" with the new config option
+    Update defaults for solard configuration options
+    Version 3.8-rc3
+    Fix mistakes in rangechecking functions
+    Only reset used power counters if the program has been running for a while
+    New furnace trigger temps - 12 C, 28 C, 36 C, 45 C
+    Fix some typos and whitespace problems
+    Tell that electric heater can be disabled in example config
+    Version 3.8-rc4
+    Introduce config option "abs_max" controlling highest possible boiler temp
+    Replace the previously used constant with config option
+    Lower default boiler abs_max temp to 52 C (was 60 C)
+    Expand settings descriptions written in log file, and split them in 2 line
+    Fix typo in example config file
+    Fix precision loss introduced recently
+    A small performance improvement
+    Tweak mode=2 operation
+    Move stuff around
+    Simplify solar pump "patrol" runs line a bit
+    Version 3.8-rc5
+    Perform a sensible config check in parse_config()
+    Write boost mode state in log file after Twanted
+    Allow collectd to pickup float values for power used
+    Keep track of scripts used to help make solard do its thing and do it well
+    Initial import of used version of solard start/stop init.d script
+    Update build.sh script to latest version used for real
+    Update README.md
+    Properly clamp maximum boiler temp at abs_max
+    Use a better name for a config option/variable
+    Flesh-out a working demo config file
+    Version 3.8-rc6
+    Turn all floating point temps to nice round numbers
+    Fix typo
+    Improve GetCurrentTime()'s power counters reset check logic
+    Version 3.8-rc7
+    Furnace pump trigger temps tweak
+    Lower diff required between boiler low end and ETC
+    Make forced solar pump run at 14 o'clock
+    Re-heat boiler if there is water to be warmed-up
+    Implement month-specific daily solar pump patrol run hour
+    Start logging boiler abs max temp too
+    Version 3.8-rc8
+    Use minimum idle time (30 s) for furnace pump too
+    Use up some missed opportunities
+    Lower minimum idle time before solar pump patrol run to 4 hours
+    Update anti-freeze protection to only work during winter, and work harder
+    Update README.md
+
 3.7 2015-12-14
 Summary: This release is all about fine tweaks, that improve quality.
 Included are changes to solard to save electrical power and better

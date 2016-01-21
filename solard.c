@@ -4,19 +4,19 @@
     * Raspberry Pi solar manager which uses 1wire and GPIO.
     * Plamen Petrov <plamen.sisi@gmail.com>
     *
-    * solard is Plamens's custom solar controller, based on the Raspberry Pi 2.
+    * solard is Plamen's custom solar controller, based on the Raspberry Pi 2.
     * Data is gathered and logged every 10 seconds from 4 DS18B20 waterproof sensors,
-    * controled are 4 relays via GPIO, and a GPIO pin is read for managing the power
-    * to Grundfoss UPS2 pumps, which if left alone block on power switch to battery.
-    * Remedy is to leave the pumps off for a couple of seconds on power failure (the
-    * UPS switches to battery fine), and then turn the pump back on. Log data is in
-    * CSV format, to be picked up by some sort of data collection/graphing tool, like
-    * collectd or similar.
-    * The daemon is controlled via its configuration file, which if need be - can
-    * be requested to be re-read while running. This is done by sending SIGUSR1
-    * signal to the daemon process. The event is noted in the log file.
-    * The logfile itself can be "grep"-ed for "ALARM:" to catch and notify of
-    * notable events, recorded by the daemon.
+    * 4 relays are controlled via GPIO, and a GPIO pin is read for managing the power
+    * to Grundfoss UPS2 pumps.
+    * Pumps power was thought to need to be managed, but it turned out one of the 2
+    * pumps on site was defective - it was replaced, and now this program just logs if
+    * grid power fails. Log data is in CSV format, to be picked up by some sort of data
+    * collection/graphing tool, like collectd or similar.
+    * The daemon is controlled via its configuration file, which solard can be told to
+    * re-read and parse while running to change config in flight. This is done by
+    * sending SIGUSR1 signal to the daemon process. The event is noted in the log file.
+    * The logfile itself can be "grep"-ed for "ALARM" and "INFO" to catch and notify
+    * of notable events, recorded by the daemon.
 */
 
 /* example for /etc/solard.cfg config file (these are the DEFAULTS):
@@ -25,7 +25,7 @@
     # $date-id
 
     # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
-    # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANAUL PUMP1+HEATER
+    # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANUAL PUMP1+HEATER
     # mode: 7=AUTO ELECTRICAL HEATER ONLY - this one obeys start/stop hours
     # mode: 8=AUTO ELECTRICAL HEATER ONLY, DOES NOT CARE ABOUT SCHEDULE !!!
     mode=1
@@ -33,21 +33,30 @@
     # wanted_T: the desired temperature of water in tank
     wanted_T=40
 
-    # these define allowed hours to use electric heat
-    use_electric_start_hour=3
-    use_electric_stop_hour=4
+    # these define allowed hours to use electric heater; if equal - electric heater is DISABLED
+    use_electric_start_hour=4
+    use_electric_stop_hour=5
 
-    # this tells to default pump1 to ON in idles
-    keep_pump1_on=0
+    # set this to non-zero and pump 1 (furnace) will never be switched off
+    pump1_always_on=0
 
-    # control the use of solar pump
+    # master control of pump 1 (furnace)
+    use_pump1=1
+
+    # master control of pump 2 (solar collector)
     use_pump2=1
 
     # day of month to reset power used counters
     day_to_reset_Pcounters=7
+
+    # night energy heat boosting
+    night_boost=0
+
+    # boiler absolute maximum temp
+    abs_max=52
 */
 
-#define SOLARDVERSION    "3.7 2015-12-14"
+#define SOLARDVERSION    "3.8-rc8 2016-01-19"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -82,13 +91,13 @@
 #define HIGH 1
 
 /* Define GPIO pins used for control */
-#define PUMP1  17 /* P1-11 */
-#define PUMP2  18 /* P1-12 */
-#define VALVE  27 /* P1-13 */
-/* P1-14 is GROUND */
-#define HEAT   22 /* P1-15 */
-
-#define POWER  25 /* P1-22 */
+#define GPIO_PIN_PUMP1           17 /* P1-11 */
+#define GPIO_PIN_PUMP2           18 /* P1-12 */
+#define GPIO_PIN_VALVE           27 /* P1-13 */
+/*                                     P1-14 == GROUND */
+#define GPIO_PIN_EL_HEATER       22 /* P1-15 */
+#define GPIO_PIN_FURNACE         23 /* P1-16 NOTE: Reserved for future implementation */
+#define GPIO_PIN_UPS_POWERED     25 /* P1-22 */
 
 /* Maximum difference allowed for data received from sensors between reads, C */
 #define MAX_TEMP_DIFF        7
@@ -104,10 +113,11 @@
 
 char *sensor_paths[] = { SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
 
-/* var to keep track of read errors, so if a threshold is reached - the
-program can safely shut down everything, send notification and bail out;
-initialised with borderline value to trigger immediately on errors during
-start-up; the program logic tolerates 1 minute of missing sensor data */
+/*  var to keep track of read errors, so if a threshold is reached - the
+    program can safely shut down everything, send notification and bail out;
+    initialised with borderline value to trigger immediately on errors during
+    start-up; the program logic tolerates 1 minute of missing sensor data
+*/
 unsigned short sensor_read_errors[TOTALSENSORS] = { 4, 4, 4, 4 };
 
 /* current sensors temperatures - e.g. values from last read */
@@ -168,6 +178,12 @@ unsigned long ProgramRunCycles  = 0;
 unsigned short current_timer_hour = 0;
 unsigned short current_month = 0;
 
+/* a var to be non-zero if it is winter time - so furnace should not be allowed to go too cold */
+unsigned short now_is_winter = 0;
+
+/* array storing the hour at wich to make the solar pump daily run for each month */
+unsigned short pump_start_hour_for[13] = { 11, 14, 13, 12, 11, 10, 9, 9, 10, 11, 12, 13, 14 };
+
 struct structsolard_cfg
 {
     char    mode_str[MAXLEN];
@@ -178,12 +194,18 @@ struct structsolard_cfg
     int     use_electric_start_hour;
     char    use_electric_stop_hour_str[MAXLEN];
     int     use_electric_stop_hour;
-    char    keep_pump1_on_str[MAXLEN];
-    int     keep_pump1_on;
+    char    pump1_always_on_str[MAXLEN];
+    int     pump1_always_on;
+    char    use_pump1_str[MAXLEN];
+    int     use_pump1;
     char    use_pump2_str[MAXLEN];
     int     use_pump2;
     char    day_to_reset_Pcounters_str[MAXLEN];
     int     day_to_reset_Pcounters;
+    char    night_boost_str[MAXLEN];
+    int     night_boost;
+    char    abs_max_str[MAXLEN];
+    int     abs_max;
 }
 structsolard_cfg;
 
@@ -199,21 +221,62 @@ DisableGPIOpins();
 /* end of forward-declared functions */
 
 void
+rangecheck_mode( int m )
+{
+    if (m < 0) m = 0;
+    if (m > 8) m = 0;
+}
+
+void
+rangecheck_wanted_temp( int temp )
+{
+    if (temp < 10) temp = 10;
+    if (temp > 50) temp = 50;
+}
+
+void
+rangecheck_abs_max_temp( int t )
+{
+    if (t < 30) t = 30;
+    if (t > 65) t = 65;
+}
+
+void
+rangecheck_hour( int h )
+{
+    if (h < 0) h = 0;
+    if (h > 23) h = 23;
+}
+
+void
+rangecheck_day_of_month( int d )
+{
+    if (d < 1) d = 1;
+    if (d > 28) d = 28;
+}
+
+void
 SetDefaultCfg() {
     strcpy( solard_cfg.mode_str, "1");
     solard_cfg.mode = 1;
     strcpy( solard_cfg.wanted_T_str, "40");
     solard_cfg.wanted_T = 40;
-    strcpy( solard_cfg.use_electric_start_hour_str, "3");
-    solard_cfg.use_electric_start_hour = 3;
-    strcpy( solard_cfg.use_electric_stop_hour_str, "4");
-    solard_cfg.use_electric_stop_hour = 4;
-    strcpy( solard_cfg.keep_pump1_on_str, "0");
-    solard_cfg.keep_pump1_on = 0;
+    strcpy( solard_cfg.use_electric_start_hour_str, "4");
+    solard_cfg.use_electric_start_hour = 4;
+    strcpy( solard_cfg.use_electric_stop_hour_str, "5");
+    solard_cfg.use_electric_stop_hour = 5;
+    strcpy( solard_cfg.pump1_always_on_str, "0");
+    solard_cfg.pump1_always_on = 0;
+    strcpy( solard_cfg.use_pump1_str, "1");
+    solard_cfg.use_pump1 = 1;
     strcpy( solard_cfg.use_pump2_str, "1");
     solard_cfg.use_pump2 = 1;
     strcpy( solard_cfg.day_to_reset_Pcounters_str, "7");
     solard_cfg.day_to_reset_Pcounters = 7;
+    strcpy( solard_cfg.night_boost_str, "0");
+    solard_cfg.night_boost = 0;
+    strcpy( solard_cfg.abs_max_str, "52");
+    solard_cfg.abs_max = 52;
 }
 
 short
@@ -312,12 +375,18 @@ parse_config()
             strncpy (solard_cfg.use_electric_start_hour_str, value, MAXLEN);
             else if (strcmp(name, "use_electric_stop_hour")==0)
             strncpy (solard_cfg.use_electric_stop_hour_str, value, MAXLEN);
-            else if (strcmp(name, "keep_pump1_on")==0)
-            strncpy (solard_cfg.keep_pump1_on_str, value, MAXLEN);
+            else if (strcmp(name, "pump1_always_on")==0)
+            strncpy (solard_cfg.pump1_always_on_str, value, MAXLEN);
+            else if (strcmp(name, "use_pump1")==0)
+            strncpy (solard_cfg.use_pump1_str, value, MAXLEN);
             else if (strcmp(name, "use_pump2")==0)
             strncpy (solard_cfg.use_pump2_str, value, MAXLEN);
             else if (strcmp(name, "day_to_reset_Pcounters")==0)
             strncpy (solard_cfg.day_to_reset_Pcounters_str, value, MAXLEN);
+            else if (strcmp(name, "night_boost")==0)
+            strncpy (solard_cfg.night_boost_str, value, MAXLEN);
+            else if (strcmp(name, "abs_max")==0)
+            strncpy (solard_cfg.abs_max_str, value, MAXLEN);
         }
         /* Close file */
         fclose (fp);
@@ -327,35 +396,58 @@ parse_config()
     strcpy( buff, solard_cfg.mode_str );
     i = atoi( buff );
     solard_cfg.mode = i;
+    rangecheck_mode( solard_cfg.mode );
     strcpy( buff, solard_cfg.wanted_T_str );
     i = atoi( buff );
     if ( i ) solard_cfg.wanted_T = i;
+    rangecheck_wanted_temp( solard_cfg.wanted_T );
     strcpy( buff, solard_cfg.use_electric_start_hour_str );
     i = atoi( buff );
     solard_cfg.use_electric_start_hour = i;
+    rangecheck_hour( solard_cfg.use_electric_start_hour );
     strcpy( buff, solard_cfg.use_electric_stop_hour_str );
     i = atoi( buff );
     solard_cfg.use_electric_stop_hour = i;
-    strcpy( buff, solard_cfg.keep_pump1_on_str );
+    rangecheck_hour( solard_cfg.use_electric_stop_hour );
+    strcpy( buff, solard_cfg.pump1_always_on_str );
     i = atoi( buff );
-    solard_cfg.keep_pump1_on = i;
+    solard_cfg.pump1_always_on = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
+    strcpy( buff, solard_cfg.use_pump1_str );
+    i = atoi( buff );
+    solard_cfg.use_pump1 = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, solard_cfg.use_pump2_str );
     i = atoi( buff );
     solard_cfg.use_pump2 = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, solard_cfg.day_to_reset_Pcounters_str );
     i = atoi( buff );
     if ( i ) solard_cfg.day_to_reset_Pcounters = i;
+    rangecheck_day_of_month( solard_cfg.day_to_reset_Pcounters );
+    strcpy( buff, solard_cfg.night_boost_str );
+    i = atoi( buff );
+    solard_cfg.night_boost = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
+    strcpy( buff, solard_cfg.abs_max_str );
+    i = atoi( buff );
+    if (i < (solard_cfg.wanted_T+3)) { i = solard_cfg.wanted_T+3; }
+    solard_cfg.abs_max = i;
+    rangecheck_abs_max_temp( solard_cfg.abs_max );
 
-    /* Prepare log message and write it to log file */
+    /* Prepare log message part 1 and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using values: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d, resetPday=%d",\
-        solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
-        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
+        sprintf( buff, " INFO: Using values: Mode=%d, wanted temp=%d, el. heater start hour=%d, stop hour=%d,",\
+        solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, solard_cfg.use_electric_stop_hour );
         } else {
-        sprintf( buff, " INFO: Read CFG file: M=%d, Twanted=%d, ELH start=%d, stop=%d, keepP1on=%d, useP2=%d, resetPday=%d",\
-        solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, \
-        solard_cfg.use_electric_stop_hour, solard_cfg.keep_pump1_on, solard_cfg.use_pump2, solard_cfg.day_to_reset_Pcounters );
+        sprintf( buff, " INFO: Read CFG file: Mode=%d, wanted temp=%d, el. heater start hour=%d, stop hour=%d,",\
+        solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, solard_cfg.use_electric_stop_hour );
     }
+    log_message(LOG_FILE, buff);
+    /* Prepare log message part 2 and write it to log file */
+    sprintf( buff, " INFO: furnace pump always on=%d, use furnace pump=%d, use solar pump=%d, reset P counters day=%d, "\
+    "night boiler boost=%d, absMAX=%d", solard_cfg.pump1_always_on, solard_cfg.use_pump1, solard_cfg.use_pump2,\
+    solard_cfg.day_to_reset_Pcounters, solard_cfg.night_boost, solard_cfg.abs_max );
     log_message(LOG_FILE, buff);
 }
 
@@ -373,8 +465,8 @@ WritePersistentPower() {
     logfile = fopen( POWER_FILE, "w" );
     if ( !logfile ) return;
     fprintf( logfile, "# solard power persistence file written %s\n", timestamp );
-    fprintf( logfile, "total=%3.3f\n", TotalPowerUsed );
-    fprintf( logfile, "nightly=%3.3f\n", NightlyPowerUsed );
+    fprintf( logfile, "total=%6.3f\n", TotalPowerUsed );
+    fprintf( logfile, "nightly=%6.3f\n", NightlyPowerUsed );
     fclose( logfile );
 }
 
@@ -435,10 +527,10 @@ ReadPersistentPower() {
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using power counters start values: Total=%3.3f, Nightly=%3.3f",
+        sprintf( buff, " INFO: Using power counters start values: Total=%6.3f, Nightly=%6.3f",
         TotalPowerUsed, NightlyPowerUsed );
         } else {
-        sprintf( buff, " INFO: Read power counters start values: Total=%3.3f, Nightly=%3.3f",
+        sprintf( buff, " INFO: Read power counters start values: Total=%6.3f, Nightly=%6.3f",
         TotalPowerUsed, NightlyPowerUsed );
     }
     log_message(LOG_FILE, buff);
@@ -681,33 +773,35 @@ daemonize()
 short
 EnableGPIOpins()
 {
-    if (-1 == GPIOExport(PUMP1)) return 0;
-    if (-1 == GPIOExport(PUMP2)) return 0;
-    if (-1 == GPIOExport(VALVE)) return 0;
-    if (-1 == GPIOExport(HEAT))  return 0;
-    if (-1 == GPIOExport(POWER)) return 0;
+    if (-1 == GPIOExport(GPIO_PIN_PUMP1)) return 0;
+    if (-1 == GPIOExport(GPIO_PIN_PUMP2)) return 0;
+    if (-1 == GPIOExport(GPIO_PIN_VALVE)) return 0;
+    if (-1 == GPIOExport(GPIO_PIN_EL_HEATER))  return 0;
+    if (-1 == GPIOExport(GPIO_PIN_UPS_POWERED)) return 0;
     return -1;
 }
 
 short
 SetGPIODirection()
 {
-    if (-1 == GPIODirection(PUMP1, OUT)) return 0;
-    if (-1 == GPIODirection(PUMP2, OUT)) return 0;
-    if (-1 == GPIODirection(VALVE, OUT)) return 0;
-    if (-1 == GPIODirection(HEAT, OUT))  return 0;
-    if (-1 == GPIODirection(POWER, IN))  return 0;
+    /* output pins */
+    if (-1 == GPIODirection(GPIO_PIN_PUMP1, OUT)) return 0;
+    if (-1 == GPIODirection(GPIO_PIN_PUMP2, OUT)) return 0;
+    if (-1 == GPIODirection(GPIO_PIN_VALVE, OUT)) return 0;
+    if (-1 == GPIODirection(GPIO_PIN_EL_HEATER, OUT))  return 0;
+    /* input pins */
+    if (-1 == GPIODirection(GPIO_PIN_UPS_POWERED, IN))  return 0;
     return -1;
 }
 
 short
 DisableGPIOpins()
 {
-    if (-1 == GPIOUnexport(PUMP1)) return 0;
-    if (-1 == GPIOUnexport(PUMP2)) return 0;
-    if (-1 == GPIOUnexport(VALVE)) return 0;
-    if (-1 == GPIOUnexport(HEAT))  return 0;
-    if (-1 == GPIOUnexport(POWER)) return 0;
+    if (-1 == GPIOUnexport(GPIO_PIN_PUMP1)) return 0;
+    if (-1 == GPIOUnexport(GPIO_PIN_PUMP2)) return 0;
+    if (-1 == GPIOUnexport(GPIO_PIN_VALVE)) return 0;
+    if (-1 == GPIOUnexport(GPIO_PIN_EL_HEATER))  return 0;
+    if (-1 == GPIOUnexport(GPIO_PIN_UPS_POWERED)) return 0;
     return -1;
 }
 
@@ -723,27 +817,27 @@ ReadSensors() {
             if (sensor_read_errors[i]) sensor_read_errors[i]--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
             if (new_val < (sensors[i+5]-(2*MAX_TEMP_DIFF))) {
-                sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
+                sprintf( msg, " WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
                 sensor_read_errors[i]++;
             }
             if (new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF))) {
-                sprintf( msg, " WARNING: Counting %3.3f for sensor %d as BAD and using %3.3f.",\
+                sprintf( msg, " WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
                 sensor_read_errors[i]++;
             }
             if (new_val < (sensors[i+5]-MAX_TEMP_DIFF)) {
-                sprintf( msg, " WARNING: Correcting LOW %3.3f for sensor %d with %3.3f.",\
+                sprintf( msg, " WARNING: Correcting LOW %6.3f for sensor %d with %6.3f.",\
                 new_val, i+1, sensors[i+5]-MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5]-MAX_TEMP_DIFF;
             }
             if (new_val > (sensors[i+5]+MAX_TEMP_DIFF)) {
-                sprintf( msg, " WARNING: Correcting HIGH %3.3f for sensor %d with %3.3f.",\
+                sprintf( msg, " WARNING: Correcting HIGH %6.3f for sensor %d with %6.3f.",\
                 new_val, i+1, sensors[i+5]+MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5]+MAX_TEMP_DIFF;
@@ -772,18 +866,18 @@ ReadSensors() {
     }
 }
 
-/* Read GPIO pin POWER into CPowerByBattery (see top of file)
+/* Read GPIO_PIN_UPS_POWERED into CPowerByBattery (see top of file)
 which should be 1 if the external power is generated by UPS */
 void
 ReadExternalPower() {
     CPowerByBatteryPrev = CPowerByBattery;
-    CPowerByBattery = GPIORead(POWER);
+    CPowerByBattery = GPIORead(GPIO_PIN_UPS_POWERED);
 }
 
 /* Return non-zero value on critical condition found based on current data in sensors[] */
 short
 CriticalTempsFound() {
-    if (Tkotel > 66) return 1;
+    if (Tkotel > 68) return 1;
     if (TboilerHigh > 62) return 2;
     return 0;
 }
@@ -792,10 +886,10 @@ CriticalTempsFound() {
 void
 ControlStateToGPIO() {
     /* put state on GPIO pins */
-    GPIOWrite( PUMP1, CPump1 );
-    GPIOWrite( PUMP2, CPump2 );
-    GPIOWrite( VALVE, CValve );
-    GPIOWrite( HEAT,  CHeater );
+    GPIOWrite( GPIO_PIN_PUMP1, CPump1 );
+    GPIOWrite( GPIO_PIN_PUMP2, CPump2 );
+    GPIOWrite( GPIO_PIN_VALVE, CValve );
+    GPIOWrite( GPIO_PIN_EL_HEATER,  CHeater );
 }
 
 void
@@ -822,6 +916,7 @@ GetCurrentTime() {
     time_t t;
     struct tm *t_struct;
     short adjusted = 0;
+    short must_check = 0;
     unsigned short current_day_of_month = 0;
 
     t = time(NULL);
@@ -830,10 +925,11 @@ GetCurrentTime() {
 
     current_timer_hour = atoi( buff );
 
+    if ((current_timer_hour == 8) && ((ProgramRunCycles % (6*60)) == 0)) must_check = 1;
+
     /* adjust night tariff start and stop hours at program start and
     every day sometime between 8:00 and 9:00 */
-    if ( ( just_started ) ||
-    ((current_timer_hour == 8) && ((ProgramRunCycles % (6*60)) == 0)) ) {
+    if (( just_started ) || ( must_check )) {
         strftime( buff, sizeof buff, "%m", t_struct );
         current_month = atoi( buff );
         if ((current_month >= 4)&&(current_month <= 10)) {
@@ -843,6 +939,7 @@ GetCurrentTime() {
                 NEstart = 23;
                 NEstop  = 6;
             }
+            now_is_winter = 0;
         }
         else {
             /* November through March - use NE from 22:00 till 5:59 */
@@ -851,24 +948,28 @@ GetCurrentTime() {
                 NEstart = 22;
                 NEstop  = 5;
             }
+            now_is_winter = 1;
         }
         if (adjusted) {
             sprintf( buff, " INFO: adjusted night energy hours, start %.2hu:00,"\
             " stop %.2hu:59.", NEstart, NEstop );
             log_message(LOG_FILE, buff);
         }
-        /* among other things - manage power used counters */
-        strftime( buff, sizeof buff, "%e", t_struct );
-        current_day_of_month = atoi( buff );
-        if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
-            /* if it is the right day - print power usage in log and reset counters */
-            sprintf( buff, " INFO: Power used last month: nightly: %2.2f Wh, daily: %2.2f Wh;",
-            NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
-            log_message(LOG_FILE, buff);
-            sprintf( buff, " INFO: total: %2.2f Wh. Power counters reset.", TotalPowerUsed );
-            log_message(LOG_FILE, buff);
-            TotalPowerUsed = 0;
-            NightlyPowerUsed = 0;
+        /* among other things - manage power used counters; only check the one
+        time during the day at 8'something...*/
+        if (must_check) {
+            strftime( buff, sizeof buff, "%e", t_struct );
+            current_day_of_month = atoi( buff );
+            if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
+                /*...if it is the correct day of month - if so: log gathered data and reset counters */
+                sprintf( buff, " INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
+                NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
+                log_message(LOG_FILE, buff);
+                sprintf( buff, " INFO: total: %3.1f Wh. Power counters reset.", TotalPowerUsed );
+                log_message(LOG_FILE, buff);
+                TotalPowerUsed = 0;
+                NightlyPowerUsed = 0;
+            }
         }
     }
 }
@@ -886,19 +987,20 @@ void
 LogData(short HM) {
     static char data[280];
     /* Log data like so:
-        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,HM,
-    PUMP1,PUMP2,VALVE,HEAT,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
-    sprintf( data, ", %3.3f,%3.3f,%3.3f,%3.3f, %2d,%2d, %d,%d,%d,%d,%d, %3.3f,%3.3f",\
-    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, HM, CPump1,\
-    CPump2, CValve, CHeater, CPowerByBattery, TotalPowerUsed, NightlyPowerUsed );
+        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,BOILERABSMAX,NIGHTBOOST,HM,
+    PUMP1,PUMP2,VALVE,EL_HEATER,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
+    sprintf( data, ", %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
+    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, solard_cfg.abs_max, \
+    solard_cfg.night_boost, HM, CPump1, CPump2, CValve, CHeater, CPowerByBattery, \
+    TotalPowerUsed, NightlyPowerUsed );
     log_message(DATA_FILE, data);
 
-    sprintf( data, ",Temp1,%3.3f\n_,Temp2,%3.3f\n_,Temp3,%3.3f\n_,Temp4,%3.3f\n_"\
-    ",Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n_"\
-    ",TempWanted,%d\n_,ElectricityUsed,%lu\n_,ElectricityUsedNT,%lu",\
+    sprintf( data, ",Temp1,%5.3f\n_,Temp2,%5.3f\n_,Temp3,%5.3f\n_,Temp4,%5.3f\n"\
+    "_,Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n"\
+    "_,TempWanted,%d\n_,BoilerTabsMax,%d\n_,ElectricityUsed,%5.3f\n_,ElectricityUsedNT,%5.3f",\
     Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
-    CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T,\
-    (long)TotalPowerUsed, (long)NightlyPowerUsed );
+    CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T, solard_cfg.abs_max,\
+    TotalPowerUsed, NightlyPowerUsed );
     log_msg_ovr(TABLE_FILE, data);
 }
 
@@ -911,58 +1013,66 @@ SelectIdleMode() {
     short wantHon = 0;
     float nightEnergyTemp = 0;
 
-    /* If furnace is cold - turn pump every 30 min on to prevent freezing */
-    if ((Tkotel < 2.9)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
-    /* If ECT is cold - turn pump every 30 min on to prevent freezing */
-    if ((Tkolektor < 2.9)&&(!CPump2)&&(SCPump2 > (6*30))) wantP2on = 1;
-    /* Furnace is above 50 - at these temps always run the pump */
-    if (Tkotel > 50) wantP1on = 1;
-    /* Furnace is above 45 and rising - turn pump on */
-    if ((Tkotel > 44.9)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
-    /* Furnace is above 36 and rising slowly - turn pump on */
-    if ((Tkotel > 31.9)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
-    /* Furnace is above 24 and rising QUICKLY - turn pump on to limit furnace thermal shock */
-    if ((Tkotel > 11.9)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
-    /* Solar has heat in excess - build up boiler temp so expensive sources stay idle */
-    if ((Tkolektor > (TboilerLow+7.5))&&(TboilerHigh < 60)) wantP2on = 1;
-    /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
-    if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
-    /* Try to heat the house by taking heat from boiler but leave at least 6 C extra on
-    top of the wanted temp - turn furnace pump on and open the valve */
+    /* During winter time use special protections to keep the system from freezing: */
+    if (now_is_winter) {
+        /* Turn furnace pump on every 20 min below 7 C to prevent freezing of some risky pipes */
+        if ((Tkotel < 7)&&(!CPump1)&&(SCPump1 > (6*20))) wantP1on = 1;
+        /* If ETC is VERY cold - turn pump on every 60 min below -8 C to prevent freezing */
+        /* FIXME: this uses boiler heat - the balancing point needs to be found */
+        if ((Tkolektor < -8)&&(!CPump2)&&(SCPump2 > (6*60))) wantP2on = 1;
+    }
+    /* Furnace is above 45 C - at these temps always run the pump */
+    if (Tkotel > 45) wantP1on = 1;
+    /* Furnace is above 39 C and rising - turn pump on */
+    if ((Tkotel > 39)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
+    /* Furnace is above 22 C and rising slowly - turn pump on */
+    if ((Tkotel > 22)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
+    /* Furnace is above 10 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
+    if ((Tkotel > 10)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
+    /* Do the next checks for boiler heating if boiler is allowed to take heat in */
+    if ( (TboilerHigh < (float)solard_cfg.abs_max) ||
+         (TboilerLow < (float)(solard_cfg.abs_max - 2)) ) {
+        /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
+        if (Tkolektor > (TboilerLow+5)) wantP2on = 1;
+        /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
+        if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
+        /* Furnace has heat in excess - open the valve so boiler can build up
+        heat now and probably save on electricity use later on */
+        if ((Tkotel > (TboilerLow+5))||(Tkotel > (TboilerHigh+2))) {
+            wantVon = 1;
+            /* And if valve has been open for 1 minutes - turn furnace pump on */
+            if (CValve && (SCValve > 6)) wantP1on = 1;
+        }
+        /* Keep valve open while there is still heat to exploit */
+        if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
+    }
+    /* Try to heat the house by taking heat from boiler but leave at least 2 C extra on
+    top of the wanted temp - first open the valve, then turn furnace pump on */
     if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
-    (TboilerHigh > ((float)solard_cfg.wanted_T + 6)) && (TboilerLow > Tkotel) ) {
+    (TboilerHigh > ((float)solard_cfg.wanted_T + 2)) && (TboilerLow > (Tkotel + 8)) ) {
+        wantVon = 1;
+        /* And if valve has been open for 1 minute - turn furnace pump on */
+        if (CValve && (SCValve > 6)) wantP1on = 1;
+    }
+    /* Run solar pump once every day at the predefined hour for current month (see array definition)
+    if it stayed off the past 4 hours*/
+    if ( (current_timer_hour == pump_start_hour_for[current_month]) && 
+         (!CPump2) && (SCPump2 > (6*60*4)) ) wantP2on = 1;
+    if (solard_cfg.pump1_always_on) {
         wantP1on = 1;
-        wantVon = 1;
     }
-    /* Furnace has heat in excess - open the valve so boiler can build up
-    heat now and probably save on electricity use later on */
-    if ((Tkotel > (TboilerLow+5.9))&&(TboilerHigh < 60)) {
-        wantVon = 1;
-        /* And if valve has been open for 2 minutes - turn furnace pump on */
-        if (CValve && (SCValve > 9)) wantP1on = 1;
+    else {
+        /* Turn furnace pump on every 24 hours */
+        if ( (!CPump1) && (SCPump1 > (6*60*24)) ) wantP1on = 1;
     }
-    /* Keep valve open while there is still heat to exploit */
-    if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
-    /* Turn furnace pump on every 24 hours */
-    if ( (!CPump1) && (SCPump1 > (6*60*24)) ) wantP1on = 1;
-    /* Forcibly run solar pump every 75 mins of idle time from 11:00 to 15:59 */
-    if ( (!CPump2) && (SCPump2 > (6*75)) && 
-    (current_timer_hour >= 11) && (current_timer_hour <= 15)) wantP2on = 1;
-    if (solard_cfg.keep_pump1_on) wantP1on = 1;
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
-    /* In the last 2 hours of night energy tariff heat up boiler until the lower sensor
-    reads 12 C on top of desired temp or 60 C, so that less day energy gets used */
-    if ( (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
-        if (solard_cfg.wanted_T > 47) { 
-            nightEnergyTemp=60.0;
-        } 
-        else { 
-            nightEnergyTemp = ((float)solard_cfg.wanted_T + 12);
-        }
-        if (TboilerLow < nightEnergyTemp) { 
-            wantHon = 1;
-        }
+    /* If enabled, in the last 2 hours of night energy tariff heat up boiler until the lower sensor
+    reads 12 C on top of desired temp, clamped at solard_cfg.abs_max, so that less day energy gets used */
+    if ( (solard_cfg.night_boost) && (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
+        nightEnergyTemp = ((float)solard_cfg.wanted_T + 12);
+        if (nightEnergyTemp > (float)solard_cfg.abs_max) { nightEnergyTemp = (float)solard_cfg.abs_max; }
+        if (TboilerLow < nightEnergyTemp) { wantHon = 1; }
     }
 
     if ( wantP1on ) ModeSelected |= 1;
@@ -984,13 +1094,13 @@ SelectHeatingMode() {
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-    if ((Tkolektor > (TboilerLow + 14.9))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, ECT temp must be at least 15 C higher than the boiler */
+    if ((Tkolektor > (TboilerLow + 13))&&(Tkolektor > Tkotel)) {
+        /* To enable solar heating, ECT temp must be at least 12 C higher than the boiler */
         wantP2on = 1;
     }
     else {
         /* Not enough heat in the solar collector; check other sources of heat */
-        if (Tkotel > (TboilerLow + 9.9)) {
+        if (Tkotel > (TboilerLow + 9)) {
             /* The furnace is hot enough - use it */
             wantVon = 1;
             /* And if valve has been open for 2 minutes - turn furnace pump on */
@@ -1013,7 +1123,7 @@ SelectHeatingMode() {
 
 void TurnPump1Off()  { if (CPump1 && !CValve && (SCPump1 > 5) && (SCValve > 5))
 { CPump1 = 0; SCPump1 = 0; } }
-void TurnPump1On()   { if (!CPump1) { CPump1 = 1; SCPump1 = 0; } }
+void TurnPump1On()   { if (solard_cfg.use_pump1 && (!CPump1) && (SCPump1 > 2)) { CPump1 = 1; SCPump1 = 0; } }
 void TurnPump2Off()  { if (CPump2 && (SCPump2 > 5)) { CPump2  = 0; SCPump2 = 0; } }
 void TurnPump2On()   { if (solard_cfg.use_pump2 && (!CPump2) && (SCPump2 > 2)) { CPump2  = 1; SCPump2 = 0; } }
 void TurnValveOff()  { if (CValve && (SCValve > 17)) { CValve  = 0; SCValve = 0; } }
@@ -1184,7 +1294,7 @@ main(int argc, char *argv[])
         if ( iter == 30 ) {
             iter = 0;
             GetCurrentTime();
-            /* and increase counter controlling writing out persitent power use data */
+            /* and increase counter controlling writing out persistent power use data */
             iter_P++;
             if ( iter_P == 2) {
                 iter_P = 0;
