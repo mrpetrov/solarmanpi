@@ -178,6 +178,9 @@ unsigned long ProgramRunCycles  = 0;
 unsigned short current_timer_hour = 0;
 unsigned short current_month = 0;
 
+/* a var to be non-zero if it is winter time - so furnace should not be allowed to go too cold */
+unsigned short now_is_winter = 0;
+
 /* array storing the hour at wich to make the solar pump daily run for each month */
 unsigned short pump_start_hour_for[13] = { 11, 14, 13, 12, 11, 10, 9, 9, 10, 11, 12, 13, 14 };
 
@@ -936,6 +939,7 @@ GetCurrentTime() {
                 NEstart = 23;
                 NEstop  = 6;
             }
+            now_is_winter = 0;
         }
         else {
             /* November through March - use NE from 22:00 till 5:59 */
@@ -944,6 +948,7 @@ GetCurrentTime() {
                 NEstart = 22;
                 NEstop  = 5;
             }
+            now_is_winter = 1;
         }
         if (adjusted) {
             sprintf( buff, " INFO: adjusted night energy hours, start %.2hu:00,"\
@@ -1008,11 +1013,14 @@ SelectIdleMode() {
     short wantHon = 0;
     float nightEnergyTemp = 0;
 
-    /* If furnace is cold - turn pump every 30 min on to prevent freezing */
-    if ((Tkotel < 3)&&(!CPump1)&&(SCPump1 > (6*30))) wantP1on = 1;
-    /* If ETC is VERY cold - turn pump on every 60 min below -8 C to prevent freezing */
-    /* FIXME: this uses boiler heat - the balancing point needs to be found */
-    if ((Tkolektor < -8)&&(!CPump2)&&(SCPump2 > (6*60))) wantP2on = 1;
+    /* During winter time use special protections to keep the system from freezing: */
+    if (now_is_winter) {
+        /* Turn furnace pump on every 20 min below 7 C to prevent freezing of some risky pipes */
+        if ((Tkotel < 7)&&(!CPump1)&&(SCPump1 > (6*20))) wantP1on = 1;
+        /* If ETC is VERY cold - turn pump on every 60 min below -8 C to prevent freezing */
+        /* FIXME: this uses boiler heat - the balancing point needs to be found */
+        if ((Tkolektor < -8)&&(!CPump2)&&(SCPump2 > (6*60))) wantP2on = 1;
+    }
     /* Furnace is above 45 C - at these temps always run the pump */
     if (Tkotel > 45) wantP1on = 1;
     /* Furnace is above 39 C and rising - turn pump on */
