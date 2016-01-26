@@ -1117,7 +1117,7 @@ SelectHeatingMode() {
 
     /* Then add to it main Select()'s stuff: */
     if ((Tkolektor > (TboilerLow + 13))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, ECT temp must be at least 12 C higher than the boiler */
+        /* To enable solar heating, ETC temp must be at least 12 C higher than the boiler */
         wantP2on = 1;
     }
     else {
