@@ -210,7 +210,7 @@ struct cfg_struct
 }
 cfg_struct;
 
-struct cfg_struct solard_cfg;
+struct cfg_struct cfg;
 
 short need_to_read_cfg = 0;
 
@@ -258,26 +258,26 @@ rangecheck_day_of_month( int d )
 
 void
 SetDefaultCfg() {
-    strcpy( solard_cfg.mode_str, "1");
-    solard_cfg.mode = 1;
-    strcpy( solard_cfg.wanted_T_str, "40");
-    solard_cfg.wanted_T = 40;
-    strcpy( solard_cfg.use_electric_start_hour_str, "4");
-    solard_cfg.use_electric_start_hour = 4;
-    strcpy( solard_cfg.use_electric_stop_hour_str, "5");
-    solard_cfg.use_electric_stop_hour = 5;
-    strcpy( solard_cfg.pump1_always_on_str, "0");
-    solard_cfg.pump1_always_on = 0;
-    strcpy( solard_cfg.use_pump1_str, "1");
-    solard_cfg.use_pump1 = 1;
-    strcpy( solard_cfg.use_pump2_str, "1");
-    solard_cfg.use_pump2 = 1;
-    strcpy( solard_cfg.day_to_reset_Pcounters_str, "7");
-    solard_cfg.day_to_reset_Pcounters = 7;
-    strcpy( solard_cfg.night_boost_str, "0");
-    solard_cfg.night_boost = 0;
-    strcpy( solard_cfg.abs_max_str, "52");
-    solard_cfg.abs_max = 52;
+    strcpy( cfg.mode_str, "1");
+    cfg.mode = 1;
+    strcpy( cfg.wanted_T_str, "40");
+    cfg.wanted_T = 40;
+    strcpy( cfg.use_electric_start_hour_str, "4");
+    cfg.use_electric_start_hour = 4;
+    strcpy( cfg.use_electric_stop_hour_str, "5");
+    cfg.use_electric_stop_hour = 5;
+    strcpy( cfg.pump1_always_on_str, "0");
+    cfg.pump1_always_on = 0;
+    strcpy( cfg.use_pump1_str, "1");
+    cfg.use_pump1 = 1;
+    strcpy( cfg.use_pump2_str, "1");
+    cfg.use_pump2 = 1;
+    strcpy( cfg.day_to_reset_Pcounters_str, "7");
+    cfg.day_to_reset_Pcounters = 7;
+    strcpy( cfg.night_boost_str, "0");
+    cfg.night_boost = 0;
+    strcpy( cfg.abs_max_str, "52");
+    cfg.abs_max = 52;
 }
 
 short
@@ -369,86 +369,86 @@ parse_config()
 
             /* Copy into correct entry in parameters struct */
             if (strcmp(name, "mode")==0)
-            strncpy (solard_cfg.mode_str, value, MAXLEN);
+            strncpy (cfg.mode_str, value, MAXLEN);
             else if (strcmp(name, "wanted_T")==0)
-            strncpy (solard_cfg.wanted_T_str, value, MAXLEN);
+            strncpy (cfg.wanted_T_str, value, MAXLEN);
             else if (strcmp(name, "use_electric_start_hour")==0)
-            strncpy (solard_cfg.use_electric_start_hour_str, value, MAXLEN);
+            strncpy (cfg.use_electric_start_hour_str, value, MAXLEN);
             else if (strcmp(name, "use_electric_stop_hour")==0)
-            strncpy (solard_cfg.use_electric_stop_hour_str, value, MAXLEN);
+            strncpy (cfg.use_electric_stop_hour_str, value, MAXLEN);
             else if (strcmp(name, "pump1_always_on")==0)
-            strncpy (solard_cfg.pump1_always_on_str, value, MAXLEN);
+            strncpy (cfg.pump1_always_on_str, value, MAXLEN);
             else if (strcmp(name, "use_pump1")==0)
-            strncpy (solard_cfg.use_pump1_str, value, MAXLEN);
+            strncpy (cfg.use_pump1_str, value, MAXLEN);
             else if (strcmp(name, "use_pump2")==0)
-            strncpy (solard_cfg.use_pump2_str, value, MAXLEN);
+            strncpy (cfg.use_pump2_str, value, MAXLEN);
             else if (strcmp(name, "day_to_reset_Pcounters")==0)
-            strncpy (solard_cfg.day_to_reset_Pcounters_str, value, MAXLEN);
+            strncpy (cfg.day_to_reset_Pcounters_str, value, MAXLEN);
             else if (strcmp(name, "night_boost")==0)
-            strncpy (solard_cfg.night_boost_str, value, MAXLEN);
+            strncpy (cfg.night_boost_str, value, MAXLEN);
             else if (strcmp(name, "abs_max")==0)
-            strncpy (solard_cfg.abs_max_str, value, MAXLEN);
+            strncpy (cfg.abs_max_str, value, MAXLEN);
         }
         /* Close file */
         fclose (fp);
     }
 
     /* Convert strings to int */
-    strcpy( buff, solard_cfg.mode_str );
+    strcpy( buff, cfg.mode_str );
     i = atoi( buff );
-    solard_cfg.mode = i;
-    rangecheck_mode( solard_cfg.mode );
-    strcpy( buff, solard_cfg.wanted_T_str );
+    cfg.mode = i;
+    rangecheck_mode( cfg.mode );
+    strcpy( buff, cfg.wanted_T_str );
     i = atoi( buff );
-    if ( i ) solard_cfg.wanted_T = i;
-    rangecheck_wanted_temp( solard_cfg.wanted_T );
-    strcpy( buff, solard_cfg.use_electric_start_hour_str );
+    if ( i ) cfg.wanted_T = i;
+    rangecheck_wanted_temp( cfg.wanted_T );
+    strcpy( buff, cfg.use_electric_start_hour_str );
     i = atoi( buff );
-    solard_cfg.use_electric_start_hour = i;
-    rangecheck_hour( solard_cfg.use_electric_start_hour );
-    strcpy( buff, solard_cfg.use_electric_stop_hour_str );
+    cfg.use_electric_start_hour = i;
+    rangecheck_hour( cfg.use_electric_start_hour );
+    strcpy( buff, cfg.use_electric_stop_hour_str );
     i = atoi( buff );
-    solard_cfg.use_electric_stop_hour = i;
-    rangecheck_hour( solard_cfg.use_electric_stop_hour );
-    strcpy( buff, solard_cfg.pump1_always_on_str );
+    cfg.use_electric_stop_hour = i;
+    rangecheck_hour( cfg.use_electric_stop_hour );
+    strcpy( buff, cfg.pump1_always_on_str );
     i = atoi( buff );
-    solard_cfg.pump1_always_on = i;
+    cfg.pump1_always_on = i;
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
-    strcpy( buff, solard_cfg.use_pump1_str );
+    strcpy( buff, cfg.use_pump1_str );
     i = atoi( buff );
-    solard_cfg.use_pump1 = i;
+    cfg.use_pump1 = i;
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
-    strcpy( buff, solard_cfg.use_pump2_str );
+    strcpy( buff, cfg.use_pump2_str );
     i = atoi( buff );
-    solard_cfg.use_pump2 = i;
+    cfg.use_pump2 = i;
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
-    strcpy( buff, solard_cfg.day_to_reset_Pcounters_str );
+    strcpy( buff, cfg.day_to_reset_Pcounters_str );
     i = atoi( buff );
-    if ( i ) solard_cfg.day_to_reset_Pcounters = i;
-    rangecheck_day_of_month( solard_cfg.day_to_reset_Pcounters );
-    strcpy( buff, solard_cfg.night_boost_str );
+    if ( i ) cfg.day_to_reset_Pcounters = i;
+    rangecheck_day_of_month( cfg.day_to_reset_Pcounters );
+    strcpy( buff, cfg.night_boost_str );
     i = atoi( buff );
-    solard_cfg.night_boost = i;
+    cfg.night_boost = i;
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
-    strcpy( buff, solard_cfg.abs_max_str );
+    strcpy( buff, cfg.abs_max_str );
     i = atoi( buff );
-    if (i < (solard_cfg.wanted_T+3)) { i = solard_cfg.wanted_T+3; }
-    solard_cfg.abs_max = i;
-    rangecheck_abs_max_temp( solard_cfg.abs_max );
+    if (i < (cfg.wanted_T+3)) { i = cfg.wanted_T+3; }
+    cfg.abs_max = i;
+    rangecheck_abs_max_temp( cfg.abs_max );
 
     /* Prepare log message part 1 and write it to log file */
     if (fp == NULL) {
         sprintf( buff, " INFO: Using values: Mode=%d, wanted temp=%d, el. heater start hour=%d, stop hour=%d,",\
-        solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, solard_cfg.use_electric_stop_hour );
+        cfg.mode, cfg.wanted_T, cfg.use_electric_start_hour, cfg.use_electric_stop_hour );
         } else {
         sprintf( buff, " INFO: Read CFG file: Mode=%d, wanted temp=%d, el. heater start hour=%d, stop hour=%d,",\
-        solard_cfg.mode, solard_cfg.wanted_T, solard_cfg.use_electric_start_hour, solard_cfg.use_electric_stop_hour );
+        cfg.mode, cfg.wanted_T, cfg.use_electric_start_hour, cfg.use_electric_stop_hour );
     }
     log_message(LOG_FILE, buff);
     /* Prepare log message part 2 and write it to log file */
     sprintf( buff, " INFO: furnace pump always on=%d, use furnace pump=%d, use solar pump=%d, reset P counters day=%d, "\
-    "night boiler boost=%d, absMAX=%d", solard_cfg.pump1_always_on, solard_cfg.use_pump1, solard_cfg.use_pump2,\
-    solard_cfg.day_to_reset_Pcounters, solard_cfg.night_boost, solard_cfg.abs_max );
+    "night boiler boost=%d, absMAX=%d", cfg.pump1_always_on, cfg.use_pump1, cfg.use_pump2,\
+    cfg.day_to_reset_Pcounters, cfg.night_boost, cfg.abs_max );
     log_message(LOG_FILE, buff);
 }
 
@@ -924,8 +924,8 @@ ReWrite_CFG_TABLE_FILE() {
     sprintf( data, ",mode,%2d\n_,Tboiler_wanted,%2d\n_,elh_start,%2d\n_,elh_stop,%2d\n"\
     "_,p1_always_on,%2d\n_,use_p1,%2d\n_,use_p2,%2d\n_,Pcounters_rst_day,%2d\n_,use_night_boost,%2d\n"\
     "_,Tboiler_absMax,%2d",
-    solard_cfg.mode,solard_cfg.wanted_T,solard_cfg.use_electric_start_hour,solard_cfg.use_electric_stop_hour,
-	solard_cfg.pump1_always_on,solard_cfg.use_pump1,solard_cfg.use_pump2,solard_cfg.day_to_reset_Pcounters,
+    cfg.mode,cfg.wanted_T,cfg.use_electric_start_hour,cfg.use_electric_stop_hour,
+	cfg.pump1_always_on,cfg.use_pump1,cfg.use_pump2,cfg.day_to_reset_Pcounters,
     log_msg_ovr(CFG_TABLE_FILE, data);
 }
 
@@ -982,7 +982,7 @@ GetCurrentTime() {
         if (must_check) {
             strftime( buff, sizeof buff, "%e", t_struct );
             current_day_of_month = atoi( buff );
-            if (current_day_of_month == solard_cfg.day_to_reset_Pcounters) {
+            if (current_day_of_month == cfg.day_to_reset_Pcounters) {
                 /*...if it is the correct day of month - if so: log gathered data and reset counters */
                 sprintf( buff, " INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
                 NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
@@ -998,10 +998,10 @@ GetCurrentTime() {
 
 short
 BoilerHeatingNeeded() {
-    if ( TboilerLow > ((float)solard_cfg.wanted_T) ) return 0;
-    if ( TboilerHigh < ((float)solard_cfg.wanted_T - 0.2) ) return 1;
+    if ( TboilerLow > ((float)cfg.wanted_T) ) return 0;
+    if ( TboilerHigh < ((float)cfg.wanted_T - 0.2) ) return 1;
     if ( (TboilerHigh < TboilerHighPrev) &&
-    (TboilerHighPrev < (float)solard_cfg.wanted_T ) ) return 1;
+    (TboilerHighPrev < (float)cfg.wanted_T ) ) return 1;
     return 0;
 }
 
@@ -1012,8 +1012,8 @@ LogData(short HM) {
         Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,BOILERABSMAX,NIGHTBOOST,HM,
     PUMP1,PUMP2,VALVE,EL_HEATER,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
     sprintf( data, ", %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
-    Tkotel, Tkolektor, TboilerLow, TboilerHigh, solard_cfg.wanted_T, solard_cfg.abs_max, \
-    solard_cfg.night_boost, HM, CPump1, CPump2, CValve, CHeater, CPowerByBattery, \
+    Tkotel, Tkolektor, TboilerLow, TboilerHigh, cfg.wanted_T, cfg.abs_max, \
+    cfg.night_boost, HM, CPump1, CPump2, CValve, CHeater, CPowerByBattery, \
     TotalPowerUsed, NightlyPowerUsed );
     log_message(DATA_FILE, data);
 
@@ -1021,7 +1021,7 @@ LogData(short HM) {
     "_,Pump1,%d\n_,Pump2,%d\n_,Valve,%d\n_,Heater,%d\n_,PoweredByBattery,%d\n"\
     "_,TempWanted,%d\n_,BoilerTabsMax,%d\n_,ElectricityUsed,%5.3f\n_,ElectricityUsedNT,%5.3f",\
     Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
-    CValve, CHeater, CPowerByBattery, solard_cfg.wanted_T, solard_cfg.abs_max,\
+    CValve, CHeater, CPowerByBattery, cfg.wanted_T, cfg.abs_max,\
     TotalPowerUsed, NightlyPowerUsed );
     log_msg_ovr(TABLE_FILE, data);
 }
@@ -1052,8 +1052,8 @@ SelectIdleMode() {
     /* Furnace is above 10 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
     if ((Tkotel > 10)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
-    if ( (TboilerHigh < (float)solard_cfg.abs_max) ||
-         (TboilerLow < (float)(solard_cfg.abs_max - 2)) ) {
+    if ( (TboilerHigh < (float)cfg.abs_max) ||
+         (TboilerLow < (float)(cfg.abs_max - 2)) ) {
         /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
         if (Tkolektor > (TboilerLow+5)) wantP2on = 1;
         /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
@@ -1070,8 +1070,8 @@ SelectIdleMode() {
     }
     /* Try to heat the house by taking heat from boiler but leave at least 2 C extra on
     top of the wanted temp - first open the valve, then turn furnace pump on */
-    if ( (solard_cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
-    (TboilerHigh > ((float)solard_cfg.wanted_T + 2)) && (TboilerLow > (Tkotel + 8)) ) {
+    if ( (cfg.mode==2) && /* 2=AUTO+HEAT HOUSE BY SOLAR; */
+    (TboilerHigh > ((float)cfg.wanted_T + 2)) && (TboilerLow > (Tkotel + 8)) ) {
         wantVon = 1;
         /* And if valve has been open for 1 minute - turn furnace pump on */
         if (CValve && (SCValve > 6)) wantP1on = 1;
@@ -1080,7 +1080,7 @@ SelectIdleMode() {
     if it stayed off the past 4 hours*/
     if ( (current_timer_hour == pump_start_hour_for[current_month]) && 
          (!CPump2) && (SCPump2 > (6*60*4)) ) wantP2on = 1;
-    if (solard_cfg.pump1_always_on) {
+    if (cfg.pump1_always_on) {
         wantP1on = 1;
     }
     else {
@@ -1090,10 +1090,10 @@ SelectIdleMode() {
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
     /* If enabled, in the last 2 hours of night energy tariff heat up boiler until the lower sensor
-    reads 12 C on top of desired temp, clamped at solard_cfg.abs_max, so that less day energy gets used */
-    if ( (solard_cfg.night_boost) && (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
-        nightEnergyTemp = ((float)solard_cfg.wanted_T + 12);
-        if (nightEnergyTemp > (float)solard_cfg.abs_max) { nightEnergyTemp = (float)solard_cfg.abs_max; }
+    reads 12 C on top of desired temp, clamped at cfg.abs_max, so that less day energy gets used */
+    if ( (cfg.night_boost) && (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
+        nightEnergyTemp = ((float)cfg.wanted_T + 12);
+        if (nightEnergyTemp > (float)cfg.abs_max) { nightEnergyTemp = (float)cfg.abs_max; }
         if (TboilerLow < nightEnergyTemp) { wantHon = 1; }
     }
 
@@ -1145,9 +1145,9 @@ SelectHeatingMode() {
 
 void TurnPump1Off()  { if (CPump1 && !CValve && (SCPump1 > 5) && (SCValve > 5))
 { CPump1 = 0; SCPump1 = 0; } }
-void TurnPump1On()   { if (solard_cfg.use_pump1 && (!CPump1) && (SCPump1 > 2)) { CPump1 = 1; SCPump1 = 0; } }
+void TurnPump1On()   { if (cfg.use_pump1 && (!CPump1) && (SCPump1 > 2)) { CPump1 = 1; SCPump1 = 0; } }
 void TurnPump2Off()  { if (CPump2 && (SCPump2 > 5)) { CPump2  = 0; SCPump2 = 0; } }
-void TurnPump2On()   { if (solard_cfg.use_pump2 && (!CPump2) && (SCPump2 > 2)) { CPump2  = 1; SCPump2 = 0; } }
+void TurnPump2On()   { if (cfg.use_pump2 && (!CPump2) && (SCPump2 > 2)) { CPump2  = 1; SCPump2 = 0; } }
 void TurnValveOff()  { if (CValve && (SCValve > 17)) { CValve  = 0; SCValve = 0; } }
 void TurnValveOn()   { if (!CValve && (SCValve > 5)) { CValve  = 1; SCValve = 0; } }
 void TurnHeaterOff() { if (CHeater && (SCHeater > 17)) { CHeater = 0; SCHeater = 0; } }
@@ -1157,18 +1157,18 @@ void
 RequestElectricHeat() {
     /* Do the check with config to see if its OK to use electric heater,
     for example: if its on "night tariff" - switch it on */
-    if ( solard_cfg.use_electric_start_hour > solard_cfg.use_electric_stop_hour ) {
+    if ( cfg.use_electric_start_hour > cfg.use_electric_stop_hour ) {
         /* heater allowed like from 23:00(23) to 05:00(4) - so use OR */
-        if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) ||
-        (current_timer_hour < solard_cfg.use_electric_stop_hour) ) {
+        if ( (current_timer_hour >= cfg.use_electric_start_hour) ||
+        (current_timer_hour < cfg.use_electric_stop_hour) ) {
             /* allowed time - if heater is off - turn it on */
             TurnHeaterOn();
         }
     }
     else {
         /* heater allowed like from 05:00(5) to 07:00(6) - so use AND */
-        if ( (current_timer_hour >= solard_cfg.use_electric_start_hour) &&
-        (current_timer_hour < solard_cfg.use_electric_stop_hour) ) {
+        if ( (current_timer_hour >= cfg.use_electric_start_hour) &&
+        (current_timer_hour < cfg.use_electric_stop_hour) ) {
             /* allowed time - if heater is off - turn it on */
             TurnHeaterOn();
         }
@@ -1331,7 +1331,7 @@ main(int argc, char *argv[])
         ReadSensors();
         ReadExternalPower();
         /* do what "mode" from CFG files says - watch the LOG file to see used values */
-        switch (solard_cfg.mode) {
+        switch (cfg.mode) {
             default:
             case 0: /* 0=ALL OFF */
             HeatingMode = 0;
