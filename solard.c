@@ -1039,9 +1039,9 @@ SelectIdleMode() {
     if (now_is_winter) {
         /* Turn furnace pump on every 20 min below 7 C to prevent freezing of some risky pipes */
         if ((Tkotel < 7)&&(!CPump1)&&(SCPump1 > (6*20))) wantP1on = 1;
-        /* If ETC is VERY cold - turn pump on every 60 min below -8 C to prevent freezing */
+        /* If ETC is cold - turn pump on every 30 min below 2 C to prevent freezing */
         /* FIXME: this uses boiler heat - the balancing point needs to be found */
-        if ((Tkolektor < -8)&&(!CPump2)&&(SCPump2 > (6*60))) wantP2on = 1;
+        if ((Tkolektor < 2)&&(!CPump2)&&(SCPump2 > (6*30))) wantP2on = 1;
     }
     /* Furnace is above 45 C - at these temps always run the pump */
     if (Tkotel > 45) wantP1on = 1;
