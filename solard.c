@@ -185,7 +185,7 @@ unsigned short now_is_winter = 0;
 /* array storing the hour at wich to make the solar pump daily run for each month */
 unsigned short pump_start_hour_for[13] = { 11, 14, 13, 12, 11, 10, 9, 9, 10, 11, 12, 13, 14 };
 
-struct structsolard_cfg
+struct cfg_struct
 {
     char    mode_str[MAXLEN];
     int     mode;
@@ -208,9 +208,9 @@ struct structsolard_cfg
     char    abs_max_str[MAXLEN];
     int     abs_max;
 }
-structsolard_cfg;
+cfg_struct;
 
-struct structsolard_cfg solard_cfg;
+struct cfg_struct solard_cfg;
 
 short need_to_read_cfg = 0;
 
