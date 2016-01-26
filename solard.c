@@ -921,11 +921,12 @@ ReWrite_CFG_TABLE_FILE() {
     Time(by log function),mode,wanted_T,use_electric_start_hour,use_electric_stop_hour,
 	pump1_always_on,use_pump1,use_pump2,day_to_reset_Pcounters,night_boost,abs_max;
 	on seperate lines */
-    sprintf( data, ",mode,%2d\n_,Tboiler_wanted,%2d\n_,elh_start,%2d\n_,elh_stop,%2d\n"\
-    "_,p1_always_on,%2d\n_,use_p1,%2d\n_,use_p2,%2d\n_,Pcounters_rst_day,%2d\n_,use_night_boost,%2d\n"\
-    "_,Tboiler_absMax,%2d",
-    cfg.mode,cfg.wanted_T,cfg.use_electric_start_hour,cfg.use_electric_stop_hour,
-	cfg.pump1_always_on,cfg.use_pump1,cfg.use_pump2,cfg.day_to_reset_Pcounters,
+    sprintf( data, ",mode,%d\n_,Tboiler_wanted,%d\n_,elh_start,%d\n_,elh_stop,%d\n"\
+    "_,p1_always_on,%d\n_,use_p1,%d\n_,use_p2,%d\n_,Pcounters_rst_day,%d\n"\
+	"_,use_night_boost,%d\n_,Tboiler_absMax,%d",
+    cfg.mode, cfg.wanted_T, cfg.use_electric_start_hour, cfg.use_electric_stop_hour,
+	cfg.pump1_always_on, cfg.use_pump1, cfg.use_pump2, cfg.day_to_reset_Pcounters,
+	cfg.night_boost, cfg.abs_max);
     log_msg_ovr(CFG_TABLE_FILE, data);
 }
 
