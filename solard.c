@@ -76,6 +76,7 @@
 #define LOG_FILE        "/var/log/solard.log"
 #define DATA_FILE       "/run/shm/solard_data.log"
 #define TABLE_FILE      "/run/shm/solard_current"
+#define CFG_TABLE_FILE  "/run/shm/solard_cur_cfg"
 #define CONFIG_FILE     "/etc/solard.cfg"
 #define POWER_FILE      "/var/log/solard_power"
 
@@ -909,6 +910,25 @@ write_log_start() {
     log_message(LOG_FILE, start_log_text );
 }
 
+/* Function to log currently used config in TABLE_FILE format. The idea is that this file will be made
+available to a web app, which will fetch it once in a while to get current working config for solard
+without the need for root access (necessary to read /etc/solard.cfg), so relevant data could be shown.
+This function should be called less often, e.g. once every 5 minutes or something... */
+void
+ReWrite_CFG_TABLE_FILE() {
+    static char data[280];
+    /* Log data like so:
+    Time(by log function),mode,wanted_T,use_electric_start_hour,use_electric_stop_hour,
+	pump1_always_on,use_pump1,use_pump2,day_to_reset_Pcounters,night_boost,abs_max;
+	on seperate lines */
+    sprintf( data, ",mode,%2d\n_,Tboiler_wanted,%2d\n_,elh_start,%2d\n_,elh_stop,%2d\n"\
+    "_,p1_always_on,%2d\n_,use_p1,%2d\n_,use_p2,%2d\n_,Pcounters_rst_day,%2d\n_,use_night_boost,%2d\n"\
+    "_,Tboiler_absMax,%2d",
+    solard_cfg.mode,solard_cfg.wanted_T,solard_cfg.use_electric_start_hour,solard_cfg.use_electric_stop_hour,
+	solard_cfg.pump1_always_on,solard_cfg.use_pump1,solard_cfg.use_pump2,solard_cfg.day_to_reset_Pcounters,
+    log_msg_ovr(CFG_TABLE_FILE, data);
+}
+
 /* Function to get current time and put the hour in current_timer_hour */
 void
 GetCurrentTime() {
@@ -918,6 +938,8 @@ GetCurrentTime() {
     short adjusted = 0;
     short must_check = 0;
     unsigned short current_day_of_month = 0;
+	
+	ReWrite_CFG_TABLE_FILE();
 
     t = time(NULL);
     t_struct = localtime( &t );
@@ -1259,6 +1281,10 @@ main(int argc, char *argv[])
     if (log_message(TABLE_FILE," ***\n")) {
         printf(" Cannot open the mandatory "TABLE_FILE" file needed for operation!\n");
         exit(3);
+    }
+    if (log_message(CFG_TABLE_FILE," ***\n")) {
+        printf(" Cannot open the mandatory "CFG_TABLE_FILE" file needed for operation!\n");
+        exit(4);
     }
 
     daemonize();
