@@ -1056,7 +1056,7 @@ SelectIdleMode() {
     if ( (TboilerHigh < (float)cfg.abs_max) ||
          (TboilerLow < (float)(cfg.abs_max - 2)) ) {
         /* Use better heat source: */
-        if (TKolektor > (Tkotel+2)) {
+        if (Tkolektor > (Tkotel+2)) {
             /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
             if (Tkolektor > (TboilerLow+8)) wantP2on = 1;
             /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
