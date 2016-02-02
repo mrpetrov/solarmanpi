@@ -1055,19 +1055,24 @@ SelectIdleMode() {
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
     if ( (TboilerHigh < (float)cfg.abs_max) ||
          (TboilerLow < (float)(cfg.abs_max - 2)) ) {
-        /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
-        if (Tkolektor > (TboilerLow+8)) wantP2on = 1;
-        /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
-        if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
-        /* Furnace has heat in excess - open the valve so boiler can build up
-        heat now and probably save on electricity use later on */
-        if ((Tkotel > (TboilerLow+5))||(Tkotel > (TboilerHigh+2))) {
-            wantVon = 1;
-            /* And if valve has been open for 1 minutes - turn furnace pump on */
-            if (CValve && (SCValve > 6)) wantP1on = 1;
+        /* Use better heat source: */
+        if (TKolektor > (Tkotel+2)) {
+            /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
+            if (Tkolektor > (TboilerLow+8)) wantP2on = 1;
+            /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
+            if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
         }
-        /* Keep valve open while there is still heat to exploit */
-        if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
+        else {
+            /* Furnace has heat in excess - open the valve so boiler can build up
+            heat now and probably save on electricity use later on */
+            if ((Tkotel > (TboilerLow+5))||(Tkotel > (TboilerHigh+2))) {
+                wantVon = 1;
+                /* And if valve has been open for 1 minutes - turn furnace pump on */
+                if (CValve && (SCValve > 6)) wantP1on = 1;
+            }
+            /* Keep valve open while there is still heat to exploit */
+            if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
+        }
     }
     /* Try to heat the house by taking heat from boiler but leave at least 2 C extra on
     top of the wanted temp - first open the valve, then turn furnace pump on */
