@@ -1085,8 +1085,8 @@ SelectIdleMode() {
         wantP1on = 1;
     }
     else {
-        /* Turn furnace pump on every 24 hours */
-        if ( (!CPump1) && (SCPump1 > (6*60*24)) ) wantP1on = 1;
+        /* Turn furnace pump on every 4 days */
+        if ( (!CPump1) && (SCPump1 > (6*60*24*4)) ) wantP1on = 1;
     }
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
