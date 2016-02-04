@@ -1067,10 +1067,7 @@ SelectIdleMode() {
         else {
             /* Furnace has heat in excess - open the valve so boiler can build up
             heat now and probably save on electricity use later on */
-            /* Require selected heat source to be near boiler hot end to avoid loosing heat
-            to the enviroment because of the system working */
-            if ( ((Tkotel > (TboilerLow+5))&&(Tkotel > (TboilerHigh-2)))
-               || (Tkotel > (TboilerHigh+2)))  {
+            if ( Tkotel > (TboilerHigh+2) )  {
                 wantVon = 1;
                 /* And if valve has been open for 1 minutes - turn furnace pump on */
                 if (CValve && (SCValve > 6)) wantP1on = 1;
