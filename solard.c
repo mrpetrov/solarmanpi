@@ -1058,14 +1058,19 @@ SelectIdleMode() {
         /* Use better heat source: */
         if (Tkolektor > (Tkotel+2)) {
             /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
-            if (Tkolektor > (TboilerLow+8)) wantP2on = 1;
+            /* Require selected heat source to be near boiler hot end to avoid loosing heat
+            to the enviroment because of the system working */
+            if ((Tkolektor > (TboilerLow+8))&&(Tkolektor > (TboilerHigh-2))) wantP2on = 1;
             /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
             if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
         }
         else {
             /* Furnace has heat in excess - open the valve so boiler can build up
             heat now and probably save on electricity use later on */
-            if ((Tkotel > (TboilerLow+5))||(Tkotel > (TboilerHigh+2))) {
+            /* Require selected heat source to be near boiler hot end to avoid loosing heat
+            to the enviroment because of the system working */
+            if ( ((Tkotel > (TboilerLow+5))&&(Tkotel > (TboilerHigh-2)))
+               || (Tkotel > (TboilerHigh+2)))  {
                 wantVon = 1;
                 /* And if valve has been open for 1 minutes - turn furnace pump on */
                 if (CValve && (SCValve > 6)) wantP1on = 1;
