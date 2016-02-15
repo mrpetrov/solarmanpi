@@ -1058,7 +1058,7 @@ SelectIdleMode() {
             /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
             /* Require selected heat source to be near boiler hot end to avoid loosing heat
             to the enviroment because of the system working */
-            if ((Tkolektor > (TboilerLow+8))&&(Tkolektor > (TboilerHigh-2))) wantP2on = 1;
+            if ((Tkolektor > (TboilerLow+10))&&(Tkolektor > (TboilerHigh-2))) wantP2on = 1;
             /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
             if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
         }
