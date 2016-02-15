@@ -1050,8 +1050,8 @@ SelectIdleMode() {
     if ((Tkotel > 39)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
     /* Furnace is above 22 C and rising slowly - turn pump on */
     if ((Tkotel > 22)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
-    /* Furnace is above 10 C and rising QUICKLY - turn pump on to limit furnace thermal shock */
-    if ((Tkotel > 10)&&(Tkotel > (TkotelPrev+0.18))) wantP1on = 1;
+    /* Furnace temp is rising QUICKLY - turn pump on to limit furnace thermal shock */
+    if (Tkotel > (TkotelPrev+0.18)) wantP1on = 1;
     /* Do the next checks for boiler heating if boiler is allowed to take heat in */
     if ( (TboilerHigh < (float)cfg.abs_max) ||
          (TboilerLow < (float)(cfg.abs_max - 2)) ) {
