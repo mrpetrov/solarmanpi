@@ -1044,8 +1044,8 @@ SelectIdleMode() {
         /* FIXME: this uses boiler heat - the balancing point needs to be found */
         if ((Tkolektor < 2)&&(!CPump2)&&(SCPump2 > (6*30))) wantP2on = 1;
     }
-    /* Furnace is above 45 C - at these temps always run the pump */
-    if (Tkotel > 45) wantP1on = 1;
+    /* Furnace is above 42 C - at these temps always run the pump */
+    if (Tkotel > 42) wantP1on = 1;
     /* Furnace is above 39 C and rising - turn pump on */
     if ((Tkotel > 39)&&(Tkotel > (TkotelPrev+0.06))) wantP1on = 1;
     /* Furnace is above 22 C and rising slowly - turn pump on */
