@@ -1058,9 +1058,9 @@ SelectIdleMode() {
             /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
             /* Require selected heat source to be near boiler hot end to avoid loosing heat
             to the enviroment because of the system working */
-            if ((Tkolektor > (TboilerLow+10))&&(Tkolektor > (TboilerHigh-2))) wantP2on = 1;
-            /* Keep solar pump on while solar fluid is more than 3 C hotter than boiler lower end */
-            if ((CPump2) && (Tkolektor > (TboilerLow+3))) wantP2on = 1;
+            if ((Tkolektor > (TboilerLow+12))&&(Tkolektor > (TboilerHigh-2))) wantP2on = 1;
+            /* Keep solar pump on while solar fluid is more than 5 C hotter than boiler lower end */
+            if ((CPump2) && (Tkolektor > (TboilerLow+5))) wantP2on = 1;
         }
         else {
             /* Furnace has heat in excess - open the valve so boiler can build up
@@ -1071,7 +1071,7 @@ SelectIdleMode() {
                 if (CValve && (SCValve > 6)) wantP1on = 1;
             }
             /* Keep valve open while there is still heat to exploit */
-            if ((CValve) && (Tkotel > (TboilerLow+3))) wantVon = 1;
+            if ((CValve) && (Tkotel > (TboilerLow+4))) wantVon = 1;
         }
     }
     /* Try to heat the house by taking heat from boiler but leave at least 2 C extra on
@@ -1122,8 +1122,8 @@ SelectHeatingMode() {
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-    if ((Tkolektor > (TboilerLow + 13))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, ETC temp must be at least 12 C higher than the boiler */
+    if ((Tkolektor > (TboilerLow + 9))&&(Tkolektor > Tkotel)) {
+        /* To enable solar heating, ETC temp must be at least 9 C higher than the boiler */
         wantP2on = 1;
     }
     else {
