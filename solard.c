@@ -1058,7 +1058,7 @@ SelectIdleMode() {
             /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
             /* Require selected heat source to be near boiler hot end to avoid loosing heat
             to the enviroment because of the system working */
-            if ((Tkolektor > (TboilerLow+12))&&(Tkolektor > (TboilerHigh-2))) wantP2on = 1;
+            if ((Tkolektor > (TboilerLow+13))&&(Tkolektor > (TboilerHigh-2))) wantP2on = 1;
             /* Keep solar pump on while solar fluid is more than 5 C hotter than boiler lower end */
             if ((CPump2) && (Tkolektor > (TboilerLow+5))) wantP2on = 1;
         }
@@ -1122,8 +1122,8 @@ SelectHeatingMode() {
     ModeSelected = SelectIdleMode();
 
     /* Then add to it main Select()'s stuff: */
-    if ((Tkolektor > (TboilerLow + 9))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, ETC temp must be at least 9 C higher than the boiler */
+    if ((Tkolektor > (TboilerLow + 10))&&(Tkolektor > Tkotel)) {
+        /* To enable solar heating, ETC temp must be at least 10 C higher than the boiler */
         wantP2on = 1;
     }
     else {
