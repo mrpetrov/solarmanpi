@@ -1123,7 +1123,7 @@ SelectHeatingMode() {
 
     /* Then add to it main Select()'s stuff: */
     if ((Tkolektor > (TboilerLow + 10))&&(Tkolektor > Tkotel)) {
-        /* To enable solar heating, ETC temp must be at least 10 C higher than the boiler */
+        /* To enable solar heating, ETC temp must be at least 10 C higher than boiler cold end */
         wantP2on = 1;
     }
     else {
@@ -1136,9 +1136,9 @@ SelectHeatingMode() {
         }
         else {
             /* All is cold - use electric heater if possible */
-            /* FIXME For now - only turn heater on if valve is fully closed,
-            because it runs with at least one pump */
-            if (!CValve && (SCValve > 15)) wantHon = 1;
+            /* Only turn heater on if valve is fully closed, because it runs with at least one pump
+               and make sure ETC pump is NOT running...*/
+            if ((!CValve && (SCValve > 15))&&(!CPump2) wantHon = 1;
         }
     }
 
