@@ -1138,7 +1138,7 @@ SelectHeatingMode() {
             /* All is cold - use electric heater if possible */
             /* Only turn heater on if valve is fully closed, because it runs with at least one pump
                and make sure ETC pump is NOT running...*/
-            if ((!CValve && (SCValve > 15))&&(!CPump2) wantHon = 1;
+            if ((!CValve && (SCValve > 15))&&(!CPump2)) wantHon = 1;
         }
     }
 
