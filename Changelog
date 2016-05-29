@@ -1,3 +1,40 @@
+3.9 2016-05-29
+This somewhat slow dev period tested the system actual parameters,
+albeit not 100%... nature has its own ways.
+Anyway - some new additions to accomodate monitoring and control system,
+some tweaks to trigger conditions, and also - some docs added.
+If you are interested - go check out the docs and scripts folders.
+
+Shortlog changes since 3.8:
+    Write active config every 5 minutes to CFG_TABLE_FILE
+    Increase ETC freeze protection set temp
+    Fix typo
+    Shorten solard config struct type
+    Shorten solard config struct variable name
+    Version 3.9-rc1
+    Fix compile breakage, remove CFG_TABL.. spacing
+    Increase diff required for ETC to boiler low end to 8 C
+    During Summer furnace pump runs at least once every 4 days
+    Try to avoid using 2 heat sources for boiler
+    Version 3.9-rc2
+    Fix compile failure causing typo
+    Avoid excess losses - only use heat sources for net benefit
+    Reheating would only increase losses - be stricter
+    Version 3.9-rc3
+    Always run furnace pump if furnace temp is 42+ C
+    If furnace temp is rising quickly - turn pump on
+    Remove intermediate furnace pump trigger
+    Increase diff required for ETC to boiler low end to 10 C
+    Version 3.9-rc4
+    Tweak trigger diff requirements
+    Version 3.9-rc5
+    Create docs folder with some content
+    Tweak trigger temps again
+    Do not run electric heater with collector pump
+    Version 3.9-rc6
+    Fix compile failure causing missing bracket
+    Version 3.9
+
 3.8 2016-01-21
 Summary: This dev cycle contains a lot of actual fixes, because finally
 the snow and cold came to BG, and all the logic of solard was tested.
