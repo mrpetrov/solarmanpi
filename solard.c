@@ -33,9 +33,11 @@
     # wanted_T: the desired temperature of water in tank
     wanted_T=40
 
-    # these define allowed hours to use electric heater; if equal - electric heater is DISABLED
-    use_electric_start_hour=4
-    use_electric_stop_hour=5
+    # is the electric heater allowed during night tariff hours
+    use_electric_heater_night=1
+    
+    # is the electric heater allowed during non-"night tariff" hours
+    use_electric_heater_day=1
 
     # set this to non-zero and pump 1 (furnace) will never be switched off
     pump1_always_on=0
@@ -191,10 +193,10 @@ struct cfg_struct
     int     mode;
     char    wanted_T_str[MAXLEN];
     int     wanted_T;
-    char    use_electric_start_hour_str[MAXLEN];
-    int     use_electric_start_hour;
-    char    use_electric_stop_hour_str[MAXLEN];
-    int     use_electric_stop_hour;
+    char    use_electric_heater_night_str[MAXLEN];
+    int     use_electric_heater_night;
+    char    use_electric_heater_day_str[MAXLEN];
+    int     use_electric_heater_day;
     char    pump1_always_on_str[MAXLEN];
     int     pump1_always_on;
     char    use_pump1_str[MAXLEN];
@@ -243,13 +245,6 @@ rangecheck_abs_max_temp( int t )
 }
 
 void
-rangecheck_hour( int h )
-{
-    if (h < 0) h = 0;
-    if (h > 23) h = 23;
-}
-
-void
 rangecheck_day_of_month( int d )
 {
     if (d < 1) d = 1;
@@ -262,10 +257,10 @@ SetDefaultCfg() {
     cfg.mode = 1;
     strcpy( cfg.wanted_T_str, "40");
     cfg.wanted_T = 40;
-    strcpy( cfg.use_electric_start_hour_str, "4");
-    cfg.use_electric_start_hour = 4;
-    strcpy( cfg.use_electric_stop_hour_str, "5");
-    cfg.use_electric_stop_hour = 5;
+    strcpy( cfg.use_electric_heater_night_str, "1");
+    cfg.use_electric_heater_night = 1;
+    strcpy( cfg.use_electric_heater_day_str, "1");
+    cfg.use_electric_heater_day = 1;
     strcpy( cfg.pump1_always_on_str, "0");
     cfg.pump1_always_on = 0;
     strcpy( cfg.use_pump1_str, "1");
@@ -372,10 +367,10 @@ parse_config()
             strncpy (cfg.mode_str, value, MAXLEN);
             else if (strcmp(name, "wanted_T")==0)
             strncpy (cfg.wanted_T_str, value, MAXLEN);
-            else if (strcmp(name, "use_electric_start_hour")==0)
-            strncpy (cfg.use_electric_start_hour_str, value, MAXLEN);
-            else if (strcmp(name, "use_electric_stop_hour")==0)
-            strncpy (cfg.use_electric_stop_hour_str, value, MAXLEN);
+            else if (strcmp(name, "use_electric_heater_night")==0)
+            strncpy (cfg.use_electric_heater_night_str, value, MAXLEN);
+            else if (strcmp(name, "use_electric_heater_day")==0)
+            strncpy (cfg.use_electric_heater_day_str, value, MAXLEN);
             else if (strcmp(name, "pump1_always_on")==0)
             strncpy (cfg.pump1_always_on_str, value, MAXLEN);
             else if (strcmp(name, "use_pump1")==0)
@@ -402,14 +397,14 @@ parse_config()
     i = atoi( buff );
     if ( i ) cfg.wanted_T = i;
     rangecheck_wanted_temp( cfg.wanted_T );
-    strcpy( buff, cfg.use_electric_start_hour_str );
+    strcpy( buff, cfg.use_electric_heater_night_str );
     i = atoi( buff );
-    cfg.use_electric_start_hour = i;
-    rangecheck_hour( cfg.use_electric_start_hour );
-    strcpy( buff, cfg.use_electric_stop_hour_str );
+    cfg.use_electric_heater_night = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
+    strcpy( buff, cfg.use_electric_heater_day_str );
     i = atoi( buff );
-    cfg.use_electric_stop_hour = i;
-    rangecheck_hour( cfg.use_electric_stop_hour );
+    cfg.use_electric_heater_day = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, cfg.pump1_always_on_str );
     i = atoi( buff );
     cfg.pump1_always_on = i;
@@ -438,11 +433,11 @@ parse_config()
 
     /* Prepare log message part 1 and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using values: Mode=%d, wanted temp=%d, el. heater start hour=%d, stop hour=%d,",\
-        cfg.mode, cfg.wanted_T, cfg.use_electric_start_hour, cfg.use_electric_stop_hour );
+        sprintf( buff, " INFO: Using values: Mode=%d, wanted temp=%d, el. heater: night=%d, day=%d,",\
+        cfg.mode, cfg.wanted_T, cfg.use_electric_heater_night, cfg.use_electric_heater_day );
         } else {
-        sprintf( buff, " INFO: Read CFG file: Mode=%d, wanted temp=%d, el. heater start hour=%d, stop hour=%d,",\
-        cfg.mode, cfg.wanted_T, cfg.use_electric_start_hour, cfg.use_electric_stop_hour );
+        sprintf( buff, " INFO: Read CFG file: Mode=%d, wanted temp=%d, el. heater: night=%d, day=%d,",\
+        cfg.mode, cfg.wanted_T, cfg.use_electric_heater_night, cfg.use_electric_heater_day );
     }
     log_message(LOG_FILE, buff);
     /* Prepare log message part 2 and write it to log file */
@@ -918,13 +913,13 @@ void
 ReWrite_CFG_TABLE_FILE() {
     static char data[280];
     /* Log data like so:
-    Time(by log function),mode,wanted_T,use_electric_start_hour,use_electric_stop_hour,
+    Time(by log function),mode,wanted_T,use_electric_heater_night,use_electric_heater_day,
 	pump1_always_on,use_pump1,use_pump2,day_to_reset_Pcounters,night_boost,abs_max;
 	on seperate lines */
     sprintf( data, ",mode,%d\n_,Tboiler_wanted,%d\n_,elh_start,%d\n_,elh_stop,%d\n"\
     "_,p1_always_on,%d\n_,use_p1,%d\n_,use_p2,%d\n_,Pcounters_rst_day,%d\n"\
 	"_,use_night_boost,%d\n_,Tboiler_absMax,%d",
-    cfg.mode, cfg.wanted_T, cfg.use_electric_start_hour, cfg.use_electric_stop_hour,
+    cfg.mode, cfg.wanted_T, cfg.use_electric_heater_night, cfg.use_electric_heater_day,
 	cfg.pump1_always_on, cfg.use_pump1, cfg.use_pump2, cfg.day_to_reset_Pcounters,
 	cfg.night_boost, cfg.abs_max);
     log_msg_ovr(CFG_TABLE_FILE, data);
@@ -1163,21 +1158,16 @@ void
 RequestElectricHeat() {
     /* Do the check with config to see if its OK to use electric heater,
     for example: if its on "night tariff" - switch it on */
-    if ( cfg.use_electric_start_hour > cfg.use_electric_stop_hour ) {
-        /* heater allowed like from 23:00(23) to 05:00(4) - so use OR */
-        if ( (current_timer_hour >= cfg.use_electric_start_hour) ||
-        (current_timer_hour < cfg.use_electric_stop_hour) ) {
-            /* allowed time - if heater is off - turn it on */
-            TurnHeaterOn();
-        }
+    /* Determine current time: */
+    if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) {
+            /* NIGHT TARIFF TIME */
+            /* If heater use is allowed by config - turn it on */
+            if (cfg.use_electric_heater_night) TurnHeaterOn();
     }
     else {
-        /* heater allowed like from 05:00(5) to 07:00(6) - so use AND */
-        if ( (current_timer_hour >= cfg.use_electric_start_hour) &&
-        (current_timer_hour < cfg.use_electric_stop_hour) ) {
-            /* allowed time - if heater is off - turn it on */
-            TurnHeaterOn();
-        }
+            /* DAY TIME */
+            /* If heater use is allowed by config - turn it on */
+            if (cfg.use_electric_heater_day) TurnHeaterOn();
     }
 }
 
