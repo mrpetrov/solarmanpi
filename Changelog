@@ -1,3 +1,14 @@
+4.0 2016-__-__
+This development cycle saw the electric heater start and stop hours settings
+go in favor of a more simple solution: 2 new settings that control the electric
+heater use during "night tariff" hours and non-"night tariff" hours. This
+allowed for one more optimisation of electric energy use - during "night tariff"
+hours - the electric heater will be more agressively used to keep its temp near
+the set desired one.
+
+Shortlog changes since 3.9:
+    ...
+
 3.9 2016-05-29
 This somewhat slow dev period tested the system actual parameters,
 albeit not 100%... nature has its own ways.
