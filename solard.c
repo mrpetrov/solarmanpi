@@ -170,7 +170,7 @@ float NightlyPowerUsed;
 /* this in Wh per 10 seconds is 8.34 W */
 /* pump 1 (furnace) runs at 48 W setting, pump 2 (solar) - 7 W */
 
-/* NightEnergy (NE) start and end hours variables - get recalculated every days */
+/* NightEnergy (NE) start and end hours variables - get recalculated every day */
 unsigned short NEstart = 20;
 unsigned short NEstop  = 11;
 
@@ -973,13 +973,13 @@ GetCurrentTime() {
             " stop %.2hu:59.", NEstart, NEstop );
             log_message(LOG_FILE, buff);
         }
-        /* among other things - manage power used counters; only check the one
-        time during the day at 8'something...*/
+        /* among other things - manage power used counters; only check one
+        time during the day: at 8'something...*/
         if (must_check) {
             strftime( buff, sizeof buff, "%e", t_struct );
             current_day_of_month = atoi( buff );
             if (current_day_of_month == cfg.day_to_reset_Pcounters) {
-                /*...if it is the correct day of month - if so: log gathered data and reset counters */
+                /*...if it is the correct day of month - log gathered data and reset counters */
                 sprintf( buff, " INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
                 NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
                 log_message(LOG_FILE, buff);
