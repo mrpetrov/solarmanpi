@@ -1090,7 +1090,12 @@ SelectIdleMode() {
     }
     /* If solar is too hot - do not damage other equipment with the hot water */
     if (Tkolektor > 85) wantP2on = 0;
-    /* If enabled, in the last 2 hours of night energy tariff heat up boiler until the lower sensor
+    /* Two energy saving functions follow (if activated): */
+    /* 1) During night tariff hours, try to keep boiler lower end near wanted temp */
+    if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) {
+        if ( TboilerLow < ((float)cfg.wanted_T - 3.2) ) ) { wantHon = 1; }
+    }
+    /* 2) In the last 2 hours of night energy tariff heat up boiler until the lower sensor
     reads 12 C on top of desired temp, clamped at cfg.abs_max, so that less day energy gets used */
     if ( (cfg.night_boost) && (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
         nightEnergyTemp = ((float)cfg.wanted_T + 12);
