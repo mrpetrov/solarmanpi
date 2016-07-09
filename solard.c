@@ -1005,10 +1005,10 @@ void
 LogData(short HM) {
     static char data[280];
     /* Log data like so:
-        Time(by log function), TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,BOILERABSMAX,NIGHTBOOST,HM,
+        Time(by log function), HOUR, TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,BOILERABSMAX,NIGHTBOOST,HM,
     PUMP1,PUMP2,VALVE,EL_HEATER,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
-    sprintf( data, ", %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
-    Tkotel, Tkolektor, TboilerLow, TboilerHigh, cfg.wanted_T, cfg.abs_max, \
+    sprintf( data, ", %2d, %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
+    current_timer_hour, Tkotel, Tkolektor, TboilerLow, TboilerHigh, cfg.wanted_T, cfg.abs_max, \
     cfg.night_boost, HM, CPump1, CPump2, CValve, CHeater, CPowerByBattery, \
     TotalPowerUsed, NightlyPowerUsed );
     log_message(DATA_FILE, data);
