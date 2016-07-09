@@ -916,7 +916,7 @@ ReWrite_CFG_TABLE_FILE() {
     Time(by log function),mode,wanted_T,use_electric_heater_night,use_electric_heater_day,
 	pump1_always_on,use_pump1,use_pump2,day_to_reset_Pcounters,night_boost,abs_max;
 	on seperate lines */
-    sprintf( data, ",mode,%d\n_,Tboiler_wanted,%d\n_,elh_start,%d\n_,elh_stop,%d\n"\
+    sprintf( data, ",mode,%d\n_,Tboiler_wanted,%d\n_,elh_nt,%d\n_,elh_dt,%d\n"\
     "_,p1_always_on,%d\n_,use_p1,%d\n_,use_p2,%d\n_,Pcounters_rst_day,%d\n"\
 	"_,use_night_boost,%d\n_,Tboiler_absMax,%d",
     cfg.mode, cfg.wanted_T, cfg.use_electric_heater_night, cfg.use_electric_heater_day,
