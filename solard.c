@@ -1040,13 +1040,12 @@ SelectIdleMode() {
         if ((Tkolektor < 2)&&(!CPump2)&&(SCPump2 > (6*30))) wantP2on = 1;
     }
     else {
-        /* Check if month is June, July or August */
-        if ((current_month >= 6)&&(current_month <= 8)) {
-            /* In above months - try to cool down the house via furnace pump
-               circulation every day at 12:00 and 15:00... or thereabout
-               if the furnace pump has been idle in the last 1 hour */
-            if ( (!CPump1) && ((current_timer_hour==12)||(current_timer_hour==15)) &&
-                 (SCPump1 > (6*60*1)) ) wantP1on = 1;
+        /* In June, July and August, every day at 12:xx and 15:xx... */
+        if ( ((current_month >= 6)&&(current_month <= 8)) &&
+             ((current_timer_hour==12)||(current_timer_hour==15)) ) {
+            /* If the furnace pump has been idle in the last 30 minutes, try to cool down
+               the house via furnace pump */
+            if ( (!CPump1) && (SCPump1 > (6*30)) ) wantP1on = 1;
             /* And trough these days and hours, if the pump has just been started - keep
                it running for at least 10 minutes and until the furnace temp stops rising*/
             if ( (CPump1) && ((SCPump1 < (6*10))||(Tkotel > TkotelPrev)) ) wantP1on = 1;
