@@ -850,7 +850,7 @@ ReadSensors() {
     /* Allow for maximum of 6 consecutive 10 second intervals of missing sensor data
     on any of the sensors before quitting screaming... */
     for (i=0;i<TOTALSENSORS;i++) {
-        if (sensor_read_errors[i]>=5) {
+        if (sensor_read_errors[i]>5) {
             /* log the errors, clean up and bail out */
             if ( ! DisableGPIOpins() ) {
                 log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed. Halting!");
