@@ -1,13 +1,36 @@
-4.0 2016-__-__
+4.0 2017-01-29
 This development cycle saw the electric heater start and stop hours settings
 go in favor of a more simple solution: 2 new settings that control the electric
 heater use during "night tariff" hours and non-"night tariff" hours. This
 allowed for one more optimisation of electric energy use - during "night tariff"
 hours - the electric heater will be more agressively used to keep its temp near
 the set desired one.
+There was a winter 2016-2017 fix for emergencies temps - the solar collector
+once almost froze, which prompted a change in the triggering logic for when
+to run solar pump.
 
 Shortlog changes since 3.9:
-    ...
+    Update changelog
+    Version 4.0
+    Fix missing sensors data check
+    Version 4.0-rc3
+    Raise anti-freeze temps to be on the safe side
+    Do not run electric heater if solar pump is running, again
+    Summer cooling - fix pump run criteria proper
+    Summer cooling - do not run furnace every 5 minutes
+    Implement summer house cooling
+    Version 4.0-rc2
+    Help debugging by also logging current_timer_hour
+    Finish el heater transition for web interface, too
+    Fix compile-braking typo
+    Fix build script for use in git tree
+    Start Changelog updates
+    Improve night energy electric heater use
+    Fix some typos in comments about night energy
+    Version 4.0-rc1
+    Rework electric heater config
+    Mark new dev cycle start
+    Update Changelog
 
 3.9 2016-05-29
 This somewhat slow dev period tested the system actual parameters,
