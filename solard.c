@@ -1106,7 +1106,7 @@ SelectIdleMode() {
     /* Two energy saving functions follow (if activated): */
     /* 1) During night tariff hours, try to keep boiler lower end near wanted temp */
     if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) {
-        if ( (!CPump2) && (TboilerLow < ((float)cfg.wanted_T - 2.2)) ) { wantHon = 1; }
+        if ( (!CPump2) && (TboilerLow < ((float)cfg.wanted_T - 1.1)) ) { wantHon = 1; }
     }
     /* 2) In the last 2 hours of night energy tariff heat up boiler until the lower sensor
     reads 12 C on top of desired temp, clamped at cfg.abs_max, so that less day energy gets used */
