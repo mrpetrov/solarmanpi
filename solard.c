@@ -1075,8 +1075,8 @@ SelectIdleMode() {
             heat now and probably save on electricity use later on */
             if ( Tkotel > (TboilerHigh+2) )  {
                 wantVon = 1;
-                /* And if valve has been open for 1 minutes - turn furnace pump on */
-                if (CValve && (SCValve > 6)) wantP1on = 1;
+                /* And if valve has been open for 90 seconds - turn furnace pump on */
+                if (CValve && (SCValve > 8)) wantP1on = 1;
             }
             /* Keep valve open while there is still heat to exploit */
             if ((CValve) && (Tkotel > (TboilerLow+4))) wantVon = 1;
