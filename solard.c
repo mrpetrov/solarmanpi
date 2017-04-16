@@ -1062,7 +1062,7 @@ SelectIdleMode() {
     if ( (TboilerHigh < (float)cfg.abs_max) ||
          (TboilerLow < (float)(cfg.abs_max - 2)) ) {
         /* Use better heat source: */
-        if (Tkolektor > (Tkotel+2.0)) {
+        if (Tkolektor > (Tkotel+2)) {
             /* ETCs have heat in excess - build up boiler temp so expensive sources stay idle */
             /* Require selected heat source to be near boiler hot end to avoid loosing heat
             to the enviroment because of the system working */
@@ -1073,7 +1073,7 @@ SelectIdleMode() {
         else {
             /* Furnace has heat in excess - open the valve so boiler can build up
             heat now and probably save on electricity use later on */
-            if ( Tkotel > (TboilerLow+4.5) )  {
+            if ((Tkotel > (TboilerHigh+3)) || (Tkotel > (TboilerLow+9)))  {
                 wantVon = 1;
                 /* And if valve has been open for 90 seconds - turn furnace pump on */
                 if (CValve && (SCValve > 8)) wantP1on = 1;
