@@ -58,7 +58,7 @@
     abs_max=52
 */
 
-#define SOLARDVERSION    "4.0 2017-01-29"
+#define SOLARDVERSION    "4.1-rc1 2017-04-16"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -994,6 +994,7 @@ GetCurrentTime() {
 
 short
 BoilerHeatingNeeded() {
+    if ( TboilerLow < ((float)cfg.wanted_T - 10) ) return 1;
     if ( TboilerLow > ((float)cfg.wanted_T) ) return 0;
     if ( TboilerHigh < ((float)cfg.wanted_T - 0.2) ) return 1;
     if ( (TboilerHigh < TboilerHighPrev) &&
@@ -1072,10 +1073,10 @@ SelectIdleMode() {
         else {
             /* Furnace has heat in excess - open the valve so boiler can build up
             heat now and probably save on electricity use later on */
-            if ( Tkotel > (TboilerHigh+2) )  {
+            if ((Tkotel > (TboilerHigh+3)) || (Tkotel > (TboilerLow+9)))  {
                 wantVon = 1;
-                /* And if valve has been open for 1 minutes - turn furnace pump on */
-                if (CValve && (SCValve > 6)) wantP1on = 1;
+                /* And if valve has been open for 90 seconds - turn furnace pump on */
+                if (CValve && (SCValve > 8)) wantP1on = 1;
             }
             /* Keep valve open while there is still heat to exploit */
             if ((CValve) && (Tkotel > (TboilerLow+4))) wantVon = 1;
@@ -1105,7 +1106,7 @@ SelectIdleMode() {
     /* Two energy saving functions follow (if activated): */
     /* 1) During night tariff hours, try to keep boiler lower end near wanted temp */
     if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) {
-        if ( (!CPump2) && (TboilerLow < ((float)cfg.wanted_T - 2.2)) ) { wantHon = 1; }
+        if ( (!CPump2) && (TboilerLow < ((float)cfg.wanted_T - 1.1)) ) { wantHon = 1; }
     }
     /* 2) In the last 2 hours of night energy tariff heat up boiler until the lower sensor
     reads 12 C on top of desired temp, clamped at cfg.abs_max, so that less day energy gets used */
