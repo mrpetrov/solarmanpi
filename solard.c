@@ -58,7 +58,7 @@
     abs_max=52
 */
 
-#define SOLARDVERSION    "4.1 2018-01-28"
+#define SOLARDVERSION    "4.2-rc1 2018-01-29"
 
 #include <sys/stat.h>
 #include <sys/types.h>
