@@ -78,6 +78,7 @@
 #define LOG_FILE        "/var/log/solard.log"
 #define DATA_FILE       "/run/shm/solard_data.log"
 #define TABLE_FILE      "/run/shm/solard_current"
+#define JSON_FILE	"/run/shm/solard_current_json"
 #define CFG_TABLE_FILE  "/run/shm/solard_cur_cfg"
 #define CONFIG_FILE     "/etc/solard.cfg"
 #define POWER_FILE      "/var/log/solard_power"
@@ -310,6 +311,19 @@ log_msg_ovr(char *filename, char *message) {
     logfile = fopen( filename, "w" );
     if ( !logfile ) return;
     fprintf( logfile, "%s\n", file_string );
+    fclose( logfile );
+}
+
+/* this version of the logging function destroys the opened file contents, no timestamp and new line */
+void
+log_msg_cln(char *filename, char *message) {
+    FILE *logfile;
+    char file_string[300];
+
+    sprintf( file_string, "%s", message );
+    logfile = fopen( filename, "w" );
+    if ( !logfile ) return;
+    fprintf( logfile, "%s", file_string );
     fclose( logfile );
 }
 
@@ -1021,6 +1035,14 @@ LogData(short HM) {
     CValve, CHeater, CPowerByBattery, cfg.wanted_T, cfg.abs_max,\
     TotalPowerUsed, NightlyPowerUsed );
     log_msg_ovr(TABLE_FILE, data);
+
+    sprintf( data, "{Tkotel:%5.3f,Tkolektor:%5.3f,TboilerH:%5.3f,TboilerL:%5.3f,"\
+    "PumpFurnace:%d,PumpSolar:%d,Valve:%d,Heater:%d,PoweredByBattery:%d,"\
+    "TempWanted:%d,BoilerTabsMax:%d,ElectricityUsed:%5.3f,ElectricityUsedNT:%5.3f}",\
+    Tkotel, Tkolektor, TboilerHigh, TboilerLow, CPump1, CPump2,\
+    CValve, CHeater, CPowerByBattery, cfg.wanted_T, cfg.abs_max,\
+    TotalPowerUsed, NightlyPowerUsed );
+    log_msg_cln(JSON_FILE, data);
 }
 
 short
@@ -1298,6 +1320,10 @@ main(int argc, char *argv[])
     }
     if (log_message(TABLE_FILE," ***\n")) {
         printf(" Cannot open the mandatory "TABLE_FILE" file needed for operation!\n");
+        exit(3);
+    }
+    if (log_message(JSON_FILE," ***\n")) {
+        printf(" Cannot open the mandatory "JSON_FILE" file needed for operation!\n");
         exit(3);
     }
     if (log_message(CFG_TABLE_FILE," ***\n")) {
