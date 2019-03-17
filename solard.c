@@ -1008,7 +1008,7 @@ GetCurrentTime() {
 
 short
 BoilerHeatingNeeded() {
-    if ( TboilerLow < ((float)cfg.wanted_T - 10) ) return 1;
+    if ( TboilerLow < ((float)cfg.wanted_T - 14) ) return 1;
     if ( TboilerLow > ((float)cfg.wanted_T) ) return 0;
     if ( TboilerHigh < ((float)cfg.wanted_T - 0.2) ) return 1;
     if ( (TboilerHigh < TboilerHighPrev) &&
