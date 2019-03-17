@@ -287,7 +287,7 @@ log_message(char *filename, char *message) {
     t = time(NULL);
     t_struct = localtime( &t );
     strftime( timestamp, sizeof timestamp, "%F %T", t_struct );
-    sprintf( file_string, "%s%s", timestamp, message );
+    sprintf( file_string, "%s %s", timestamp, message );
     logfile = fopen( filename, "a" );
     if ( !logfile ) return -1;
     fprintf( logfile, "%s\n", file_string );
@@ -357,7 +357,7 @@ parse_config()
     char *s, buff[150];
     FILE *fp = fopen(CONFIG_FILE, "r");
     if (fp == NULL) {
-        log_message(LOG_FILE," WARNING: Failed to open "CONFIG_FILE" file for reading!");
+        log_message(LOG_FILE,"WARNING: Failed to open "CONFIG_FILE" file for reading!");
         } else {
         /* Read next line */
         while ((s = fgets (buff, sizeof buff, fp)) != NULL)
@@ -447,15 +447,15 @@ parse_config()
 
     /* Prepare log message part 1 and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using values: Mode=%d, wanted temp=%d, el. heater: night=%d, day=%d,",\
+        sprintf( buff, "INFO: Using values: Mode=%d, wanted temp=%d, el. heater: night=%d, day=%d,",\
         cfg.mode, cfg.wanted_T, cfg.use_electric_heater_night, cfg.use_electric_heater_day );
         } else {
-        sprintf( buff, " INFO: Read CFG file: Mode=%d, wanted temp=%d, el. heater: night=%d, day=%d,",\
+        sprintf( buff, "INFO: Read CFG file: Mode=%d, wanted temp=%d, el. heater: night=%d, day=%d,",\
         cfg.mode, cfg.wanted_T, cfg.use_electric_heater_night, cfg.use_electric_heater_day );
     }
     log_message(LOG_FILE, buff);
     /* Prepare log message part 2 and write it to log file */
-    sprintf( buff, " INFO: furnace pump always on=%d, use furnace pump=%d, use solar pump=%d, reset P counters day=%d, "\
+    sprintf( buff, "INFO: furnace pump always on=%d, use furnace pump=%d, use solar pump=%d, reset P counters day=%d, "\
     "night boiler boost=%d, absMAX=%d", cfg.pump1_always_on, cfg.use_pump1, cfg.use_pump2,\
     cfg.day_to_reset_Pcounters, cfg.night_boost, cfg.abs_max );
     log_message(LOG_FILE, buff);
@@ -491,7 +491,7 @@ ReadPersistentPower() {
     strcpy( nightlyP_str, "0" );
     FILE *fp = fopen(POWER_FILE, "r");
     if (fp == NULL) {
-        log_message(LOG_FILE," WARNING: Failed to open "POWER_FILE" file for reading!");
+        log_message(LOG_FILE,"WARNING: Failed to open "POWER_FILE" file for reading!");
         should_write = 1;
         } else {
         /* Read next line */
@@ -522,7 +522,7 @@ ReadPersistentPower() {
     }
 
     if (should_write) {
-        log_message(LOG_FILE, " Creating missing power persistence data file...");
+        log_message(LOG_FILE, "Creating missing power persistence data file...");
         WritePersistentPower();
     }
     else {
@@ -537,10 +537,10 @@ ReadPersistentPower() {
 
     /* Prepare log message and write it to log file */
     if (fp == NULL) {
-        sprintf( buff, " INFO: Using power counters start values: Total=%6.3f, Nightly=%6.3f",
+        sprintf( buff, "INFO: Using power counters start values: Total=%6.3f, Nightly=%6.3f",
         TotalPowerUsed, NightlyPowerUsed );
         } else {
-        sprintf( buff, " INFO: Read power counters start values: Total=%6.3f, Nightly=%6.3f",
+        sprintf( buff, "INFO: Read power counters start values: Total=%6.3f, Nightly=%6.3f",
         TotalPowerUsed, NightlyPowerUsed );
     }
     log_message(LOG_FILE, buff);
@@ -555,7 +555,7 @@ GPIOExport(int pin)
 
     fd = open("/sys/class/gpio/export", O_WRONLY);
     if (-1 == fd) {
-        log_message(LOG_FILE," Failed to open export for writing!");
+        log_message(LOG_FILE,"Failed to open export for writing!");
         return(-1);
     }
 
@@ -574,7 +574,7 @@ GPIOUnexport(int pin)
 
     fd = open("/sys/class/gpio/unexport", O_WRONLY);
     if (-1 == fd) {
-        log_message(LOG_FILE," Failed to open unexport for writing!");
+        log_message(LOG_FILE,"Failed to open unexport for writing!");
         return(-1);
     }
 
@@ -595,12 +595,12 @@ GPIODirection(int pin, int dir)
     snprintf(path, DIRECTION_MAX, "/sys/class/gpio/gpio%d/direction", pin);
     fd = open(path, O_WRONLY);
     if (-1 == fd) {
-        log_message(LOG_FILE," Failed to open GPIO direction for writing!");
+        log_message(LOG_FILE,"Failed to open GPIO direction for writing!");
         return(-1);
     }
 
     if (-1 == write(fd, &s_directions_str[IN == dir ? 0 : 3], IN == dir ? 2 : 3)) {
-        log_message(LOG_FILE," Failed to set direction!");
+        log_message(LOG_FILE,"Failed to set direction!");
         return(-1);
     }
 
@@ -618,12 +618,12 @@ GPIORead(int pin)
     snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
     fd = open(path, O_RDONLY);
     if (-1 == fd) {
-        log_message(LOG_FILE," Failed to open GPIO value for reading!");
+        log_message(LOG_FILE,"Failed to open GPIO value for reading!");
         return(-1);
     }
 
     if (-1 == read(fd, value_str, 3)) {
-        log_message(LOG_FILE," Failed to read GPIO value!");
+        log_message(LOG_FILE,"Failed to read GPIO value!");
         return(-1);
     }
 
@@ -643,12 +643,12 @@ GPIOWrite(int pin, int value)
     snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
     fd = open(path, O_WRONLY);
     if (-1 == fd) {
-        log_message(LOG_FILE," Failed to open GPIO value for writing!");
+        log_message(LOG_FILE,"Failed to open GPIO value for writing!");
         return(-1);
     }
 
     if (1 != write(fd, &s_values_str[LOW == value ? 0 : 1], 1)) {
-        log_message(LOG_FILE," Failed to write GPIO value!");
+        log_message(LOG_FILE,"Failed to write GPIO value!");
         return(-1);
     }
 
@@ -684,13 +684,13 @@ sensorRead(const char* sensor)
     snprintf(path, VALUE_MAX, "%s", sensor);
     fd = open(path, O_RDONLY);
     if (-1 == fd) {
-        log_message(LOG_FILE," Error opening sensor file. Continuing.");
+        log_message(LOG_FILE,"Error opening sensor file. Continuing.");
         return(temp);
     }
 
     /* read the first line of data */
     if (-1 == read(fd, value_str, 39)) {
-        log_message(LOG_FILE," Error reading from sensor file. Continuing.");
+        log_message(LOG_FILE,"Error reading from sensor file. Continuing.");
         close(fd);
         return(temp);
     }
@@ -700,7 +700,7 @@ sensorRead(const char* sensor)
 
     /* read the second line into value_str */
     if (-1 == read(fd, value_str, 35)) {
-        log_message(LOG_FILE," Error reading row 2 from sensor file. Continuing.");
+        log_message(LOG_FILE,"Error reading row 2 from sensor file. Continuing.");
         close(fd);
         return(temp);
     }
@@ -725,23 +725,23 @@ signal_handler(int sig)
 {
     switch(sig) {
         case SIGUSR1:
-        log_message(LOG_FILE, " INFO: Signal SIGUSR1 caught. Will re-read config file soon.");
+        log_message(LOG_FILE, "INFO: Signal SIGUSR1 caught. Will re-read config file soon.");
         need_to_read_cfg = 1;
         break;
         case SIGUSR2:
-        log_message(LOG_FILE, " INFO: Signal SIGUSR2 caught. Not implemented. Continuing.");
+        log_message(LOG_FILE, "INFO: Signal SIGUSR2 caught. Not implemented. Continuing.");
         break;
         case SIGHUP:
-        log_message(LOG_FILE, " INFO: Signal SIGHUP caught. Not implemented. Continuing.");
+        log_message(LOG_FILE, "INFO: Signal SIGHUP caught. Not implemented. Continuing.");
         break;
         case SIGTERM:
-        log_message(LOG_FILE, " INFO: Terminate signal caught. Stopping.");
+        log_message(LOG_FILE, "INFO: Terminate signal caught. Stopping.");
         WritePersistentPower();
         if ( ! DisableGPIOpins() ) {
-            log_message(LOG_FILE, " WARNING: Errors disabling GPIO! Quitting anyway.");
+            log_message(LOG_FILE, "WARNING: Errors disabling GPIO! Quitting anyway.");
             exit(4);
         }
-        log_message(LOG_FILE," Exiting normally. Bye, bye!");
+        log_message(LOG_FILE,"Exiting normally. Bye, bye!");
         exit(0);
         break;
     }
@@ -827,27 +827,27 @@ ReadSensors() {
             if (sensor_read_errors[i]) sensor_read_errors[i]--;
             if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
             if (new_val < (sensors[i+5]-(2*MAX_TEMP_DIFF))) {
-                sprintf( msg, " WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
+                sprintf( msg, "WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
                 sensor_read_errors[i]++;
             }
             if (new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF))) {
-                sprintf( msg, " WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
+                sprintf( msg, "WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
                 new_val, i+1, sensors[i+5] );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5];
                 sensor_read_errors[i]++;
             }
             if (new_val < (sensors[i+5]-MAX_TEMP_DIFF)) {
-                sprintf( msg, " WARNING: Correcting LOW %6.3f for sensor %d with %6.3f.",\
+                sprintf( msg, "WARNING: Correcting LOW %6.3f for sensor %d with %6.3f.",\
                 new_val, i+1, sensors[i+5]-MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5]-MAX_TEMP_DIFF;
             }
             if (new_val > (sensors[i+5]+MAX_TEMP_DIFF)) {
-                sprintf( msg, " WARNING: Correcting HIGH %6.3f for sensor %d with %6.3f.",\
+                sprintf( msg, "WARNING: Correcting HIGH %6.3f for sensor %d with %6.3f.",\
                 new_val, i+1, sensors[i+5]+MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
                 new_val = sensors[i+5]+MAX_TEMP_DIFF;
@@ -857,7 +857,7 @@ ReadSensors() {
         }
         else {
             sensor_read_errors[i]++;
-            sprintf( msg, " WARNING: Sensor %d ReadSensors() errors++. Counter at %d.", i+1, sensor_read_errors[i] );
+            sprintf( msg, "WARNING: Sensor %d ReadSensors() errors++. Counter at %d.", i+1, sensor_read_errors[i] );
             log_message(LOG_FILE, msg);
         }
     }
@@ -867,10 +867,10 @@ ReadSensors() {
         if (sensor_read_errors[i]>5) {
             /* log the errors, clean up and bail out */
             if ( ! DisableGPIOpins() ) {
-                log_message(LOG_FILE, " ALARM: Too many sensor errors! GPIO disable failed. Halting!");
+                log_message(LOG_FILE, "ALARM: Too many sensor errors! GPIO disable failed. Halting!");
                 exit(5);
             }
-            log_message(LOG_FILE, " ALARM: Too many sensor read errors! Stopping.");
+            log_message(LOG_FILE, "ALARM: Too many sensor read errors! Stopping.");
             exit(6);
         }
     }
@@ -906,15 +906,15 @@ void
 write_log_start() {
     char start_log_text[80];
 
-    log_message(LOG_FILE," INFO: solard "SOLARDVERSION" now starting up...");
-    log_message(LOG_FILE," Running in "RUNNING_DIR", config file "CONFIG_FILE );
-    log_message(LOG_FILE," PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
-    log_message(LOG_FILE," writing table data for collectd to "TABLE_FILE );
-    log_message(LOG_FILE," power used persistence file "POWER_FILE );
-    sprintf( start_log_text, " powers: heater=%3.1f W, pump1=%3.1f W, pump2=%3.1f W",
+    log_message(LOG_FILE,"INFO: solard "SOLARDVERSION" now starting up...");
+    log_message(LOG_FILE,"Running in "RUNNING_DIR", config file "CONFIG_FILE );
+    log_message(LOG_FILE,"PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
+    log_message(LOG_FILE,"writing table data for collectd to "TABLE_FILE );
+    log_message(LOG_FILE,"power used persistence file "POWER_FILE );
+    sprintf( start_log_text, "powers: heater=%3.1f W, pump1=%3.1f W, pump2=%3.1f W",
     HEATERPPC*(6*60), PUMP1PPC*(6*60), PUMP2PPC*(6*60) );
     log_message(LOG_FILE, start_log_text );
-    sprintf( start_log_text, " powers: valve=%3.1f W, self=%3.1f W",
+    sprintf( start_log_text, "powers: valve=%3.1f W, self=%3.1f W",
     VALVEPPC*(6*60), SELFPPC*(6*60) );
     log_message(LOG_FILE, start_log_text );
 }
@@ -983,7 +983,7 @@ GetCurrentTime() {
             now_is_winter = 1;
         }
         if (adjusted) {
-            sprintf( buff, " INFO: adjusted night energy hours, start %.2hu:00,"\
+            sprintf( buff, "INFO: adjusted night energy hours, start %.2hu:00,"\
             " stop %.2hu:59.", NEstart, NEstop );
             log_message(LOG_FILE, buff);
         }
@@ -994,10 +994,10 @@ GetCurrentTime() {
             current_day_of_month = atoi( buff );
             if (current_day_of_month == cfg.day_to_reset_Pcounters) {
                 /*...if it is the correct day of month - log gathered data and reset counters */
-                sprintf( buff, " INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
+                sprintf( buff, "INFO: Power used last month: nightly: %3.1f Wh, daily: %3.1f Wh;",
                 NightlyPowerUsed, (TotalPowerUsed-NightlyPowerUsed) );
                 log_message(LOG_FILE, buff);
-                sprintf( buff, " INFO: total: %3.1f Wh. Power counters reset.", TotalPowerUsed );
+                sprintf( buff, "INFO: total: %3.1f Wh. Power counters reset.", TotalPowerUsed );
                 log_message(LOG_FILE, buff);
                 TotalPowerUsed = 0;
                 NightlyPowerUsed = 0;
@@ -1020,9 +1020,9 @@ void
 LogData(short HM) {
     static char data[280];
     /* Log data like so:
-        Time(by log function), HOUR, TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,BOILERABSMAX,NIGHTBOOST,HM,
+        Time(by log function) HOUR, TKOTEL,TSOLAR,TBOILERL,TBOILERH, BOILERTEMPWANTED,BOILERABSMAX,NIGHTBOOST,HM,
     PUMP1,PUMP2,VALVE,EL_HEATER,POWERBYBATTERY, WATTSUSED,WATTSUSEDNIGHTTARIFF */
-    sprintf( data, ", %2d, %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
+    sprintf( data, "%2d, %6.3f,%6.3f,%6.3f,%6.3f, %2d,%2d,%d,%2d, %d,%d,%d,%d,%d, %5.3f,%5.3f",\
     current_timer_hour, Tkotel, Tkolektor, TboilerLow, TboilerHigh, cfg.wanted_T, cfg.abs_max, \
     cfg.night_boost, HM, CPump1, CPump2, CValve, CHeater, CPowerByBattery, \
     TotalPowerUsed, NightlyPowerUsed );
@@ -1281,10 +1281,10 @@ AdjustHeatingModeForBatteryPower(unsigned short HM) {
     if ( CPowerByBattery != CPowerByBatteryPrev ) {
         /* If we just switched to battery.. */
         if ( CPowerByBattery ) {
-            log_message(LOG_FILE," WARNING: Switch to BATTERY POWER detected.");
+            log_message(LOG_FILE,"WARNING: Switch to BATTERY POWER detected.");
         }
         else {
-            log_message(LOG_FILE," INFO: Powered by GRID now.");
+            log_message(LOG_FILE,"INFO: Powered by GRID now.");
         }
     }
     if ( CPowerByBattery ) {
@@ -1310,23 +1310,23 @@ main(int argc, char *argv[])
 
     /* before main work starts - try to open the log files to write a new line
     ...and SCREAM if there is trouble! */
-    if (log_message(LOG_FILE," ***\n")) {
+    if (log_message(LOG_FILE,"***\n")) {
         printf(" Cannot open the mandatory "LOG_FILE" file needed for operation!\n");
         exit(3);
     }
-    if (log_message(DATA_FILE," ***\n")) {
+    if (log_message(DATA_FILE,"***\n")) {
         printf(" Cannot open the mandatory "DATA_FILE" file needed for operation!\n");
         exit(3);
     }
-    if (log_message(TABLE_FILE," ***\n")) {
+    if (log_message(TABLE_FILE,"***\n")) {
         printf(" Cannot open the mandatory "TABLE_FILE" file needed for operation!\n");
         exit(3);
     }
-    if (log_message(JSON_FILE," ***\n")) {
+    if (log_message(JSON_FILE,"***\n")) {
         printf(" Cannot open the mandatory "JSON_FILE" file needed for operation!\n");
         exit(3);
     }
-    if (log_message(CFG_TABLE_FILE," ***\n")) {
+    if (log_message(CFG_TABLE_FILE,"***\n")) {
         printf(" Cannot open the mandatory "CFG_TABLE_FILE" file needed for operation!\n");
         exit(4);
     }
@@ -1335,13 +1335,13 @@ main(int argc, char *argv[])
 
     /* Enable GPIO pins */
     if ( ! EnableGPIOpins() ) {
-        log_message(LOG_FILE," ALARM: Cannot enable GPIO! Aborting run.");
+        log_message(LOG_FILE,"ALARM: Cannot enable GPIO! Aborting run.");
         return(1);
     }
 
     /* Set GPIO directions */
     if ( ! SetGPIODirection() ) {
-        log_message(LOG_FILE," ALARM: Cannot set GPIO direction! Aborting run.");
+        log_message(LOG_FILE,"ALARM: Cannot set GPIO direction! Aborting run.");
         return(2);
     }
 
@@ -1358,7 +1358,7 @@ main(int argc, char *argv[])
     do {
         /* Do all the important stuff... */
         if ( gettimeofday( &tvalBefore, NULL ) ) {
-            log_message(LOG_FILE," WARNING: error getting tvalBefore...");
+            log_message(LOG_FILE,"WARNING: error getting tvalBefore...");
         }
         /* get the current hour every 5 minutes for electric heater schedule */
         if ( iter == 30 ) {
@@ -1387,13 +1387,13 @@ main(int argc, char *argv[])
                 /* Set HeatingMode bits for both pumps and valve */
                 HeatingMode = 7;
                 if ( !AlarmRaised ) {
-                    log_message(LOG_FILE," ALARM: Activating emergency cooling!");
+                    log_message(LOG_FILE,"ALARM: Activating emergency cooling!");
                     AlarmRaised = 1;
                 }
             }
             else {
                 if ( AlarmRaised ) {
-                    log_message(LOG_FILE," INFO: Critical condition resolved. Running normally.");
+                    log_message(LOG_FILE,"INFO: Critical condition resolved. Running normally.");
                     AlarmRaised = 0;
                 }
                 if (BoilerHeatingNeeded()) {
@@ -1443,7 +1443,7 @@ main(int argc, char *argv[])
             parse_config();
         }
         if ( gettimeofday( &tvalAfter, NULL ) ) {
-            log_message(LOG_FILE," WARNING: error getting tvalAfter...");
+            log_message(LOG_FILE,"WARNING: error getting tvalAfter...");
             sleep( 7 );
         }
         else {
@@ -1462,7 +1462,7 @@ main(int argc, char *argv[])
 
     /* Disable GPIO pins */
     if ( ! DisableGPIOpins() ) {
-        log_message(LOG_FILE," Cannot disable GPIO on exit!");
+        log_message(LOG_FILE,"Cannot disable GPIO on exit!");
         return(4);
     }
 
