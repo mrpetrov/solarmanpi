@@ -159,6 +159,8 @@ long ctrlstatecycles[5] = { -1, 150000, 150000, 2200, 2200 };
 float TotalPowerUsed;
 float NightlyPowerUsed;
 
+float nightEnergyTemp;
+
 /* solard keeps track of total and night tariff watt-hours electrical power used */
 /* night tariff is between 23:00 and 06:00 */
 /* constants of Watt-hours of electricity used per 10 secs */
@@ -274,6 +276,8 @@ SetDefaultCfg() {
     cfg.night_boost = 0;
     strcpy( cfg.abs_max_str, "52");
     cfg.abs_max = 52;
+
+    nightEnergyTemp = 0;
 }
 
 short
@@ -459,6 +463,11 @@ parse_config()
     "night boiler boost=%d, absMAX=%d", cfg.pump1_always_on, cfg.use_pump1, cfg.use_pump2,\
     cfg.day_to_reset_Pcounters, cfg.night_boost, cfg.abs_max );
     log_message(LOG_FILE, buff);
+	
+    /* stuff for after parsing config file: */
+    /* calculate maximum possible temp for use in night_boost case */
+    nightEnergyTemp = ((float)cfg.wanted_T + 12);
+    if (nightEnergyTemp > (float)cfg.abs_max) { nightEnergyTemp = (float)cfg.abs_max; }
 }
 
 void
@@ -1052,7 +1061,6 @@ SelectIdleMode() {
     short wantP2on = 0;
     short wantVon = 0;
     short wantHon = 0;
-    float nightEnergyTemp = 0;
 
 	/* If collector is below 6 C and solar pump has NOT run in the last 15 mins -
 		turn pump on to prevent freezing */
@@ -1121,8 +1129,6 @@ SelectIdleMode() {
     /* 2) In the last 2 hours of night energy tariff heat up boiler until the lower sensor
     reads 12 C on top of desired temp, clamped at cfg.abs_max, so that less day energy gets used */
     if ( (cfg.night_boost) && (current_timer_hour >= (NEstop-1)) && (current_timer_hour <= NEstop) ) {
-        nightEnergyTemp = ((float)cfg.wanted_T + 12);
-        if (nightEnergyTemp > (float)cfg.abs_max) { nightEnergyTemp = (float)cfg.abs_max; }
         if (TboilerLow < nightEnergyTemp) { wantHon = 1; }
     }
 
