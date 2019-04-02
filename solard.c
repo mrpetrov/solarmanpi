@@ -1058,10 +1058,10 @@ SelectIdleMode() {
     if (now_is_winter) {
         /* If it is winter time - run pump every 15 minutes */
         if ((!CPump1)&&(SCPump1 > (6*15))) wantP1on = 1;
-        /* Turn furnace pump on every 10 min below 40 C to prevent freezing of some risky pipes */
-        if ((Tkotel < 40)&&(!CPump1)&&(SCPump1 > (6*10))) wantP1on = 1;
-        /* Turn furnace pump on every 5 min below 35 C to prevent freezing of some risky pipes */
-        if ((Tkotel < 35)&&(!CPump1)&&(SCPump1 > (6*5))) wantP1on = 1;
+        /* Turn furnace pump on every 12 min below 34 C to prevent freezing of some risky pipes */
+        if ((Tkotel < 34)&&(!CPump1)&&(SCPump1 > (6*12))) wantP1on = 1;
+        /* Turn furnace pump on every 6 min below 30 C to prevent freezing of some risky pipes */
+        if ((Tkotel < 30)&&(!CPump1)&&(SCPump1 > (6*6))) wantP1on = 1;
         /* If ETC is cold - turn pump on every 20 min below 6 C to prevent freezing */
         /* FIXME: this uses boiler heat - the balancing point needs to be found */
         if ((Tkolektor < 6)&&(!CPump2)&&(SCPump2 > (6*20))) wantP2on = 1;
@@ -1078,8 +1078,8 @@ SelectIdleMode() {
             if ( (CPump1) && ((SCPump1 < (6*10))||(Tkotel > TkotelPrev)) ) wantP1on = 1;
         }
     }
-    /* Furnace is above 42 C - at these temps always run the pump */
-    if (Tkotel > 42) wantP1on = 1;
+    /* Furnace is above 38 C - at these temps always run the pump */
+    if (Tkotel > 38) wantP1on = 1;
     /* Furnace is above 20 C and rising slowly - turn pump on */
     if ((Tkotel > 20)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
     /* Furnace temp is rising QUICKLY - turn pump on to limit furnace thermal shock */
