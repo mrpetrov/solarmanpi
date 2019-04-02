@@ -1066,18 +1066,6 @@ SelectIdleMode() {
         /* FIXME: this uses boiler heat - the balancing point needs to be found */
         if ((Tkolektor < 6)&&(!CPump2)&&(SCPump2 > (6*20))) wantP2on = 1;
     }
-    else {
-        /* In June, July and August, every day at 12:xx and 15:xx... */
-        if ( ((current_month >= 6)&&(current_month <= 8)) &&
-             ((current_timer_hour==12)||(current_timer_hour==15)) ) {
-            /* If the furnace pump has been idle in the last 30 minutes, try to cool down
-               the house via furnace pump */
-            if ( (!CPump1) && (SCPump1 > (6*30)) ) wantP1on = 1;
-            /* And trough these days and hours, if the pump has just been started - keep
-               it running for at least 10 minutes and until the furnace temp stops rising*/
-            if ( (CPump1) && ((SCPump1 < (6*10))||(Tkotel > TkotelPrev)) ) wantP1on = 1;
-        }
-    }
     /* Furnace is above 38 C - at these temps always run the pump */
     if (Tkotel > 38) wantP1on = 1;
     /* Furnace is above 20 C and rising slowly - turn pump on */
