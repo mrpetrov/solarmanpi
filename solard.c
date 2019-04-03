@@ -1072,7 +1072,7 @@ SelectIdleMode() {
             if so - run furnace pump at least once every 10 minutes
             we check if it is cold by looking at solar pump idle state - in the cold (-10C)
             it runs at least once per 2 hours; so double that ;) */
-		if ((SCPump2 < (6*60*4))&&(!CPump1)&&(SCPump1 > (6*10))) wantP1on = 1;
+		if ((Tkolektor < 33)&&(SCPump2 < (6*60*4))&&(!CPump1)&&(SCPump1 > (6*10))) wantP1on = 1;
 	}
     /* Furnace is above 20 C and rising slowly - turn pump on */
     if ((Tkotel > 20)&&(Tkotel > (TkotelPrev+0.12))) wantP1on = 1;
