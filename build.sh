@@ -12,7 +12,7 @@ then
     rm solard
 fi
 date
-time gcc -D_FORTIFY_SOURCE=2 -DSOLARDVERSION="`git describe --tag`" -Wall -Wno-unused-result -O3 -o solard solard.c
+time gcc -D_FORTIFY_SOURCE=2 -DSOLARDVERSION=\"`git describe --tag`\" -Wall -Wno-unused-result -O3 -o solard solard.c
 ls -l
 
 #EOF
