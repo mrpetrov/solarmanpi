@@ -1062,9 +1062,9 @@ SelectIdleMode() {
     short wantVon = 0;
     short wantHon = 0;
 
-	/* If collector is below 6 C and solar pump has NOT run in the last 15 mins -
+	/* If collector is below 7 C and solar pump has NOT run in the last 15 mins -
 		turn pump on to prevent freezing */
-	if ((Tkolektor < 6)&&(!CPump2)&&(SCPump2 > (6*15))) wantP2on = 1;
+	if ((Tkolektor < 7)&&(!CPump2)&&(SCPump2 > (6*15))) wantP2on = 1;
 	/* Furnace is above 38 C - at these temps always run the pump */
 	if (Tkotel > 38) { wantP1on = 1; }
 	else {
