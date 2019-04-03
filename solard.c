@@ -1126,8 +1126,8 @@ SelectIdleMode() {
         wantVon = 1;
         /* And if valve has been open for ~1.5 minutes - turn furnace pump on */
         if (CValve && (SCValve > 8)) wantP1on = 1;
-        /* And if valve has been open for 2 minute - turn solar pump on */
-        if (CValve && (SCValve > 10)) wantP2on = 1;
+        /* And if valve has been open for 2 minutes - turn solar pump on */
+        if (CValve && (SCValve > 11)) wantP2on = 1;
     }
     /* Two energy saving functions follow (if activated): */
     /* 1) During night tariff hours, try to keep boiler lower end near wanted temp */
