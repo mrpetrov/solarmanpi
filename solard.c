@@ -1120,8 +1120,15 @@ SelectIdleMode() {
         /* Turn furnace pump on every 4 days */
         if ( (!CPump1) && (SCPump1 > (6*60*24*4)) ) wantP1on = 1;
     }
-    /* If solar is too hot - do not damage other equipment with the hot water */
-    if (Tkolektor > 85) wantP2on = 0;
+    /* Prevent ETC from boiling its work fluid away in case all heat targets have been reached
+        and yet there is no use because for example the users are away on vacation */
+    if (Tkolektor > 68) {
+        wantVon = 1;
+        /* And if valve has been open for ~1.5 minutes - turn furnace pump on */
+        if (CValve && (SCValve > 8)) wantP1on = 1;
+        /* And if valve has been open for 2 minute - turn solar pump on */
+        if (CValve && (SCValve > 10)) wantP2on = 1;
+    }
     /* Two energy saving functions follow (if activated): */
     /* 1) During night tariff hours, try to keep boiler lower end near wanted temp */
     if ( (current_timer_hour <= NEstop) || (current_timer_hour >= NEstart) ) {
