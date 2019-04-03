@@ -893,14 +893,6 @@ ReadExternalPower() {
     CPowerByBattery = GPIORead(GPIO_PIN_UPS_POWERED);
 }
 
-/* Return non-zero value on critical condition found based on current data in sensors[] */
-short
-CriticalTempsFound() {
-    if (Tkotel > 68) return 1;
-    if (TboilerHigh > 62) return 2;
-    return 0;
-}
-
 /* Function to make GPIO state equal to controls[] (see top of file) */
 void
 ControlStateToGPIO() {
@@ -1015,16 +1007,6 @@ GetCurrentTime() {
     }
 }
 
-short
-BoilerHeatingNeeded() {
-    if ( TboilerLow < ((float)cfg.wanted_T - 14) ) return 1;
-    if ( TboilerLow > ((float)cfg.wanted_T) ) return 0;
-    if ( TboilerHigh < ((float)cfg.wanted_T - 1) ) return 1;
-    if ( (TboilerHigh < TboilerHighPrev) &&
-    (TboilerHighPrev < (float)cfg.wanted_T ) ) return 1;
-    return 0;
-}
-
 void
 LogData(short HM) {
     static char data[280];
@@ -1052,6 +1034,23 @@ LogData(short HM) {
     CValve, CHeater, CPowerByBattery, cfg.wanted_T, cfg.abs_max,\
     TotalPowerUsed, NightlyPowerUsed );
     log_msg_cln(JSON_FILE, data);
+}
+
+/* Return non-zero value on critical condition found based on current data in sensors[] */
+short
+CriticalTempsFound() {
+    if (Tkotel > 68) return 1;
+    if (TboilerHigh > 62) return 2;
+    return 0;
+}
+
+short
+BoilerHeatingNeeded() {
+    if ( TboilerLow < ((float)cfg.wanted_T - 14) ) return 1;
+    if ( TboilerLow > ((float)cfg.wanted_T) ) return 0;
+    if ( TboilerHigh < ((float)cfg.wanted_T - 1) ) return 1;
+    if ( (TboilerHigh < TboilerHighPrev) && (TboilerHighPrev < (float)cfg.wanted_T) ) return 1;
+    return 0;
 }
 
 short
