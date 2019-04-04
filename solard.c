@@ -1,22 +1,21 @@
 /*
-    * solard.c
-    *
-    * Raspberry Pi solar manager which uses 1wire and GPIO.
-    * Plamen Petrov <plamen.sisi@gmail.com>
-    *
-    * solard is Plamen's custom solar controller, based on the Raspberry Pi 2.
-    * Data is gathered and logged every 10 seconds from 4 DS18B20 waterproof sensors,
-    * 4 relays are controlled via GPIO, and a GPIO pin is read for managing the power
-    * to Grundfoss UPS2 pumps.
-    * Pumps power was thought to need to be managed, but it turned out one of the 2
-    * pumps on site was defective - it was replaced, and now this program just logs if
-    * grid power fails. Log data is in CSV format, to be picked up by some sort of data
-    * collection/graphing tool, like collectd or similar.
-    * The daemon is controlled via its configuration file, which solard can be told to
-    * re-read and parse while running to change config in flight. This is done by
-    * sending SIGUSR1 signal to the daemon process. The event is noted in the log file.
-    * The logfile itself can be "grep"-ed for "ALARM" and "INFO" to catch and notify
-    * of notable events, recorded by the daemon.
+* solard.c
+*
+* Raspberry Pi solar manager which uses 1wire and GPIO.
+* Plamen Petrov
+*
+* solard is Plamen's custom solar controller, based on the Raspberry Pi 2.
+* Data is gathered and logged every 10 seconds from 4 DS18B20 waterproof sensors,
+* 4 relays are controlled via GPIO, and a GPIO pin is read to note current
+* power source: grid or battery backed UPS.
+* Log data is in CSV format, to be picked up by some sort of data collection/graphing
+* tool, like collectd or similar. There is also JSON file more suitable for sending data
+* to data collection software like mqqt/emoncms.
+* The daemon is controlled via its configuration file, which solard can be told to
+* re-read and parse while running to change config in flight. This is done by
+* sending SIGUSR1 signal to the daemon process. The event is noted in the log file.
+* The logfile itself can be "grep"-ed for "ALARM" and "INFO" to catch and notify
+* of notable events, recorded by the daemon.
 */
 
 #include <sys/stat.h>
