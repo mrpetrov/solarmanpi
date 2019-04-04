@@ -233,8 +233,8 @@ SetDefaultCfg() {
     cfg.day_to_reset_Pcounters = 4;
     strcpy( cfg.night_boost_str, "0");
     cfg.night_boost = 0;
-    strcpy( cfg.abs_max_str, "52");
-    cfg.abs_max = 52;
+    strcpy( cfg.abs_max_str, "47");
+    cfg.abs_max = 47;
 
     nightEnergyTemp = 0;
 }

@@ -36,5 +36,5 @@ day_to_reset_Pcounters=4
 night_boost=0
 
 # boiler absolute maximum temp
-abs_max=52
+abs_max=47
 
