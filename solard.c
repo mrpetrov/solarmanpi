@@ -708,7 +708,7 @@ signal_handler(int sig)
         WritePersistentPower();
         if ( ! DisableGPIOpins() ) {
             log_message(LOG_FILE, "WARNING: Errors disabling GPIO! Quitting anyway.");
-            exit(4);
+            exit(14);
         }
         log_message(LOG_FILE,"Exiting normally. Bye, bye!");
         exit(0);
@@ -724,7 +724,7 @@ daemonize()
 
     if(getppid()==1) return; /* already a daemon */
     i=fork();
-    if (i<0) { printf("fork error!\n"); exit(1); }/* fork error */
+    if (i<0) { printf("solard daemonize(): Fork error!\n"); exit(1); }/* fork error */
     if (i>0) exit(0); /* parent exits */
     /* child (daemon) continues */
     setsid(); /* obtain a new process group */
@@ -833,10 +833,10 @@ ReadSensors() {
             /* log the errors, clean up and bail out */
             if ( ! DisableGPIOpins() ) {
                 log_message(LOG_FILE, "ALARM: Too many sensor errors! GPIO disable failed. Halting!");
-                exit(5);
+                exit(55);
             }
             log_message(LOG_FILE, "ALARM: Too many sensor read errors! Stopping.");
-            exit(6);
+            exit(66);
         }
     }
 }
@@ -1270,19 +1270,19 @@ main(int argc, char *argv[])
     }
     if (log_message(DATA_FILE,"***\n")) {
         printf(" Cannot open the mandatory "DATA_FILE" file needed for operation!\n");
-        exit(3);
+        exit(4);
     }
     if (log_message(TABLE_FILE,"***\n")) {
         printf(" Cannot open the mandatory "TABLE_FILE" file needed for operation!\n");
-        exit(3);
+        exit(5);
     }
     if (log_message(JSON_FILE,"***\n")) {
         printf(" Cannot open the mandatory "JSON_FILE" file needed for operation!\n");
-        exit(3);
+        exit(6);
     }
     if (log_message(CFG_TABLE_FILE,"***\n")) {
         printf(" Cannot open the mandatory "CFG_TABLE_FILE" file needed for operation!\n");
-        exit(4);
+        exit(7);
     }
 
     daemonize();
@@ -1290,13 +1290,13 @@ main(int argc, char *argv[])
     /* Enable GPIO pins */
     if ( ! EnableGPIOpins() ) {
         log_message(LOG_FILE,"ALARM: Cannot enable GPIO! Aborting run.");
-        return(1);
+        exit(11);
     }
 
     /* Set GPIO directions */
     if ( ! SetGPIODirection() ) {
         log_message(LOG_FILE,"ALARM: Cannot set GPIO direction! Aborting run.");
-        return(2);
+        exit(12);
     }
 
     write_log_start();
