@@ -5,6 +5,18 @@
 # example config file, which should be named /etc/solard.cfg to be in effect, also showing
 # the values solard uses if this file is missing
 
+# path to read furnace temp sensor data from
+tkotel_sensor=/dev/zero/1
+
+# path to read evacuated tube collector temps sensor data from
+tkolektor_sensor=/dev/zero/2
+
+# path to read  boiler high temps sensor data from
+tboilerh_sensor=/dev/zero/3
+
+# path to read  boiler low temps sensor data from
+tboilerl_sensor=/dev/zero/4
+
 # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
 # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANUAL PUMP1+HEATER
 # mode: 7=AUTO ELECTRICAL HEATER ONLY - this one obeys start/stop hours

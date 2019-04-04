@@ -65,13 +65,8 @@
 /* Number of all sensors to be used by the system */
 #define TOTALSENSORS         4
 
-/* Define the DS18B20 sensors paths to read temps from */
-#define SENSOR1 "/sys/bus/w1/devices/28-041464764cff/w1_slave"
-#define SENSOR2 "/sys/bus/w1/devices/28-041464403bff/w1_slave"
-#define SENSOR3 "/sys/bus/w1/devices/28-04146448f3ff/w1_slave"
-#define SENSOR4 "/sys/bus/w1/devices/28-0214608d40ff/w1_slave"
-
-char *sensor_paths[TOTALSENSORS+1] = { "/dev/zero", SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
+/* Array of char* holding the paths to temperature DS18B20 sensors */
+char* sensor_paths[TOTALSENSORS+1];
 
 /*  var to keep track of read errors, so if a threshold is reached - the
     program can safely shut down everything, send notification and bail out;
@@ -172,6 +167,10 @@ struct cfg_struct
     int     night_boost;
     char    abs_max_str[MAXLEN];
     int     abs_max;
+    char    tkotel_sensor[MAXLEN];
+    char    tkolektor_sensor[MAXLEN];
+    char    tboilerh_sensor[MAXLEN];
+    char    tboilerl_sensor[MAXLEN];
 }
 cfg_struct;
 
@@ -216,6 +215,10 @@ rangecheck_day_of_month( int d )
 
 void
 SetDefaultCfg() {
+    strcpy( cfg.tkotel_sensor, "/dev/zero/1");
+    strcpy( cfg.tkolektor_sensor, "/dev/zero/2");
+    strcpy( cfg.tboilerh_sensor, "/dev/zero/3");
+    strcpy( cfg.tboilerl_sensor, "/dev/zero/4");
     strcpy( cfg.mode_str, "1");
     cfg.mode = 1;
     strcpy( cfg.wanted_T_str, "40");
@@ -238,6 +241,11 @@ SetDefaultCfg() {
     cfg.abs_max = 47;
 
     nightEnergyTemp = 0;
+    sensor_paths[0] = (char *) &cfg.tkotel_sensor;
+    sensor_paths[1] = (char *) &cfg.tkotel_sensor;
+    sensor_paths[2] = (char *) &cfg.tkolektor_sensor;
+    sensor_paths[3] = (char *) &cfg.tboilerh_sensor;
+    sensor_paths[4] = (char *) &cfg.tboilerl_sensor;
 }
 
 short
@@ -341,7 +349,15 @@ parse_config()
             trim (value);
 
             /* Copy into correct entry in parameters struct */
-            if (strcmp(name, "mode")==0)
+            if (strcmp(name, "tkotel_sensor")==0)
+            strncpy (cfg.tkotel_sensor, value, MAXLEN);
+            else if (strcmp(name, "tkolektor_sensor")==0)
+            strncpy (cfg.tkolektor_sensor, value, MAXLEN);
+            else if (strcmp(name, "tboilerh_sensor")==0)
+            strncpy (cfg.tboilerh_sensor, value, MAXLEN);
+            else if (strcmp(name, "tboilerl_sensor")==0)
+            strncpy (cfg.tboilerl_sensor, value, MAXLEN);
+            else if (strcmp(name, "mode")==0)
             strncpy (cfg.mode_str, value, MAXLEN);
             else if (strcmp(name, "wanted_T")==0)
             strncpy (cfg.wanted_T_str, value, MAXLEN);
@@ -423,11 +439,24 @@ parse_config()
     "night boiler boost=%d, absMAX=%d", cfg.pump1_always_on, cfg.use_pump1, cfg.use_pump2,\
     cfg.day_to_reset_Pcounters, cfg.night_boost, cfg.abs_max );
     log_message(LOG_FILE, buff);
+    /* Prepare log messages with sensor paths and write them to log file */
+    sprintf( buff, "INFO: furnace temp sensor file=%s", cfg.tkotel_sensor );
+    log_message(LOG_FILE, buff);
+    sprintf( buff, "INFO: ETC temp sensor file=%s", cfg.tkolektor_sensor );
+    log_message(LOG_FILE, buff);
+    sprintf( buff, "INFO: boiler temps sensor files: high=%s", cfg.tboilerh_sensor );
+    log_message(LOG_FILE, buff);
+    sprintf( buff, "INFO: boiler temps sensor files: low=%s", cfg.tboilerl_sensor );
+    log_message(LOG_FILE, buff);
 	
     /* stuff for after parsing config file: */
     /* calculate maximum possible temp for use in night_boost case */
     nightEnergyTemp = ((float)cfg.wanted_T + 12);
     if (nightEnergyTemp > (float)cfg.abs_max) { nightEnergyTemp = (float)cfg.abs_max; }
+/*	sensor_paths[1] = (char *) &cfg.tkotel_sensor;
+	sensor_paths[2] = (char *) &cfg.tkolektor_sensor;
+	sensor_paths[3] = (char *) &cfg.tboilerh_sensor;
+	sensor_paths[4] = (char *) &cfg.tboilerl_sensor; */
 }
 
 void
