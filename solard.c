@@ -73,7 +73,7 @@
 #define SENSOR3 "/sys/bus/w1/devices/28-04146448f3ff/w1_slave"
 #define SENSOR4 "/sys/bus/w1/devices/28-0214608d40ff/w1_slave"
 
-char *sensor_paths[] = { SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
+char *sensor_paths[TOTALSENSORS+1] = { "/dev/zero", SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
 
 /*  var to keep track of read errors, so if a threshold is reached - the
     program can safely shut down everything, send notification and bail out;
@@ -83,17 +83,21 @@ char *sensor_paths[] = { SENSOR1, SENSOR2, SENSOR3, SENSOR4 };
 unsigned short sensor_read_errors[TOTALSENSORS+1] = { 4, 4, 4, 4, 4 };
 
 /* current sensors temperatures - e.g. values from last read */
-float sensors[9] = { -200, 10, 12, 20, 10, 10, 12, 20, 10 };
+float sensors[TOTALSENSORS+1] = { 0, -200, -200, -200, -200 };
+
+/* previous sensors temperatures - e.g. values from previous to last read */
+float sensors_prv[TOTALSENSORS+1] = { 0, -200, -200, -200, -200 };
 
 /* and sensor name mappings */
 #define   Tkotel                sensors[1]
 #define   Tkolektor             sensors[2]
 #define   TboilerHigh           sensors[3]
 #define   TboilerLow            sensors[4]
-#define   TkotelPrev            sensors[5]
-#define   TkolektorPrev         sensors[6]
-#define   TboilerHighPrev       sensors[7]
-#define   TboilerLowPrev        sensors[8]
+
+#define   TkotelPrev            sensors_prv[1]
+#define   TkolektorPrev         sensors_prv[2]
+#define   TboilerHighPrev       sensors_prv[3]
+#define   TboilerLowPrev        sensors_prv[4]
 
 /* current controls state - e.g. set on last decision making */
 short controls[7] = { -1, 0, 0, 0, 0, 0, 0 };
@@ -788,50 +792,46 @@ ReadSensors() {
     int i;
     char msg[100];
 
-    for (i=0;i<TOTALSENSORS;i++) {
+    for (i=1;i<=TOTALSENSORS;i++) {
         new_val = sensorRead(sensor_paths[i]);
         if ( new_val != -200 ) {
-            if (sensor_read_errors[i+1]) sensor_read_errors[i+1]--;
-            if (just_started) { sensors[i+5] = new_val; sensors[i+1] = new_val; }
-            if (new_val < (sensors[i+5]-(2*MAX_TEMP_DIFF))) {
-                sprintf( msg, "WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
-                new_val, i+1, sensors[i+5] );
+            if (sensor_read_errors[i]) sensor_read_errors[i]--;
+            if (just_started) { sensors_prv[i] = new_val; sensors[i] = new_val; }
+            if (new_val < (sensors_prv[i]-(2*MAX_TEMP_DIFF))) {
+                sprintf( msg, "WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.", new_val, i, sensors_prv[i] );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5];
-                sensor_read_errors[i+1]++;
+                new_val = sensors_prv[i];
+                sensor_read_errors[i]++;
             }
-            if (new_val > (sensors[i+5]+(2*MAX_TEMP_DIFF))) {
-                sprintf( msg, "WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.",\
-                new_val, i+1, sensors[i+5] );
+            if (new_val > (sensors_prv[i]+(2*MAX_TEMP_DIFF))) {
+                sprintf( msg, "WARNING: Counting %6.3f for sensor %d as BAD and using %6.3f.", new_val, i, sensors_prv[i] );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5];
-                sensor_read_errors[i+1]++;
+                new_val = sensors_prv[i];
+                sensor_read_errors[i]++;
             }
-            if (new_val < (sensors[i+5]-MAX_TEMP_DIFF)) {
-                sprintf( msg, "WARNING: Correcting LOW %6.3f for sensor %d with %6.3f.",\
-                new_val, i+1, sensors[i+5]-MAX_TEMP_DIFF );
+            if (new_val < (sensors_prv[i]-MAX_TEMP_DIFF)) {
+                sprintf( msg, "WARNING: Correcting LOW %6.3f for sensor %d with %6.3f.", new_val, i, sensors_prv[i]-MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5]-MAX_TEMP_DIFF;
+                new_val = sensors_prv[i]-MAX_TEMP_DIFF;
             }
-            if (new_val > (sensors[i+5]+MAX_TEMP_DIFF)) {
-                sprintf( msg, "WARNING: Correcting HIGH %6.3f for sensor %d with %6.3f.",\
-                new_val, i+1, sensors[i+5]+MAX_TEMP_DIFF );
+            if (new_val > (sensors_prv[i]+MAX_TEMP_DIFF)) {
+                sprintf( msg, "WARNING: Correcting HIGH %6.3f for sensor %d with %6.3f.", new_val, i, sensors_prv[i]+MAX_TEMP_DIFF );
                 log_message(LOG_FILE, msg);
-                new_val = sensors[i+5]+MAX_TEMP_DIFF;
+                new_val = sensors_prv[i]+MAX_TEMP_DIFF;
             }
-            sensors[i+5] = sensors[i+1];
-            sensors[i+1] = new_val;
+            sensors_prv[i] = sensors[i];
+            sensors[i] = new_val;
         }
         else {
-            sensor_read_errors[i+1]++;
-            sprintf( msg, "WARNING: Sensor %d ReadSensors() errors++. Counter at %d.", i+1, sensor_read_errors[i] );
+            sensor_read_errors[i]++;
+            sprintf( msg, "WARNING: Sensor %d ReadSensors() errors++. Counter at %d.", i, sensor_read_errors[i] );
             log_message(LOG_FILE, msg);
         }
     }
     /* Allow for maximum of 6 consecutive 10 second intervals of missing sensor data
     on any of the sensors before quitting screaming... */
-    for (i=0;i<TOTALSENSORS;i++) {
-        if (sensor_read_errors[i+1]>5) {
+    for (i=1;i<=TOTALSENSORS;i++) {
+        if (sensor_read_errors[i]>5) {
             /* log the errors, clean up and bail out */
             if ( ! DisableGPIOpins() ) {
                 log_message(LOG_FILE, "ALARM: Too many sensor errors! GPIO disable failed. Halting!");
