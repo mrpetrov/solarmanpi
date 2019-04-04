@@ -1,0 +1,40 @@
+# soldard.cfg
+# version 2.0
+# 2019-04-04
+
+# example config file, which should be named /etc/solard.cfg to be in effect, also showing
+# the values solard uses if this file is missing
+
+# mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
+# mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANUAL PUMP1+HEATER
+# mode: 7=AUTO ELECTRICAL HEATER ONLY - this one obeys start/stop hours
+# mode: 8=AUTO ELECTRICAL HEATER ONLY, DOES NOT CARE ABOUT SCHEDULE !!!
+mode=1
+
+# wanted_T: the desired temperature of water in tank
+wanted_T=40
+
+# is the electric heater ALLOWED during night tariff hours
+use_electric_heater_night=1
+
+# is the electric heater ALLOWED during non-"night tariff" hours
+use_electric_heater_day=1
+
+# set this to non-zero and pump 1 (furnace) will never be switched off
+pump1_always_on=0
+
+# master control of pump 1 (furnace)
+use_pump1=1
+
+# master control of pump 2 (solar collector)
+use_pump2=1
+
+# day of month to reset power used counters
+day_to_reset_Pcounters=4
+
+# night energy heat boosting
+night_boost=0
+
+# boiler absolute maximum temp
+abs_max=52
+
