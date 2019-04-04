@@ -52,13 +52,11 @@
 #define LOW  0
 #define HIGH 1
 
-/* Define GPIO pins used for control */
+/* Define GPIO pins used for control, BCM pin ID */
 #define GPIO_PIN_PUMP1           17 /* P1-11 */
 #define GPIO_PIN_PUMP2           18 /* P1-12 */
 #define GPIO_PIN_VALVE           27 /* P1-13 */
-/*                                     P1-14 == GROUND */
 #define GPIO_PIN_EL_HEATER       22 /* P1-15 */
-#define GPIO_PIN_FURNACE         23 /* P1-16 NOTE: Reserved for future implementation */
 #define GPIO_PIN_UPS_POWERED     25 /* P1-22 */
 
 /* Maximum difference allowed for data received from sensors between reads, C */
