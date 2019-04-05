@@ -860,12 +860,12 @@ ReadSensors() {
     for (i=1;i<=TOTALSENSORS;i++) {
         if (sensor_read_errors[i]>5) {
             /* log the errors, clean up and bail out */
-            if ( ! DisableGPIOpins() ) {
-                log_message(LOG_FILE, "ALARM: Too many sensor errors! GPIO disable failed. Halting!");
-                exit(55);
-            }
             log_message(LOG_FILE, "ALARM: Too many sensor read errors! Stopping.");
-            exit(66);
+            if ( ! DisableGPIOpins() ) {
+                log_message(LOG_FILE, "ALARM: GPIO disable failed on handling sensor read failures.");
+                exit(66);
+            }
+            exit(55);
         }
     }
 }
