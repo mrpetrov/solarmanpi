@@ -147,6 +147,10 @@ unsigned short pump_start_hour_for[13] = { 11, 14, 13, 12, 11, 10, 9, 9, 10, 11,
 
 struct cfg_struct
 {
+    char    tkotel_sensor[MAXLEN];
+    char    tkolektor_sensor[MAXLEN];
+    char    tboilerh_sensor[MAXLEN];
+    char    tboilerl_sensor[MAXLEN];
     char    mode_str[MAXLEN];
     int     mode;
     char    wanted_T_str[MAXLEN];
@@ -167,10 +171,6 @@ struct cfg_struct
     int     night_boost;
     char    abs_max_str[MAXLEN];
     int     abs_max;
-    char    tkotel_sensor[MAXLEN];
-    char    tkolektor_sensor[MAXLEN];
-    char    tboilerh_sensor[MAXLEN];
-    char    tboilerl_sensor[MAXLEN];
 }
 cfg_struct;
 

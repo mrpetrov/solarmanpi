@@ -5,6 +5,9 @@
 # example config file, which should be named /etc/solard.cfg to be in effect, also showing
 # the values solard uses if this file is missing
 
+#############################
+## Sensors config section
+
 # NOTE: in warnings and errors with sensors, sensors are numbered as follows:
 # 1 = furnace; 2 = solar collector; 3 = boiler high; 4 = boiler low
 
@@ -19,6 +22,9 @@ tboilerh_sensor=/dev/zero/3
 
 # path to read  boiler low temps sensor data from
 tboilerl_sensor=/dev/zero/4
+
+#############################
+## General config section
 
 # mode: 0=ALL OFF; 1=AUTO; 2=AUTO+HEAT HOUSE BY SOLAR; 3=MANUAL PUMP1 ONLY;
 # mode: 4=MANUAL PUMP2 ONLY; 5=MANUAL HEATER ONLY; 6=MANUAL PUMP1+HEATER
