@@ -5,6 +5,9 @@
 # example config file, which should be named /etc/solard.cfg to be in effect, also showing
 # the values solard uses if this file is missing
 
+# NOTE: in warnings and errors with sensors, sensors are numbered as follows:
+# 1 = furnace; 2 = solar collector; 3 = boiler high; 4 = boiler low
+
 # path to read furnace temp sensor data from
 tkotel_sensor=/dev/zero/1
 
