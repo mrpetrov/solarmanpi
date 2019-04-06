@@ -52,13 +52,6 @@
 #define LOW  0
 #define HIGH 1
 
-/* Define GPIO pins used for control, BCM pin ID */
-#define GPIO_PIN_PUMP1           17 /* P1-11 */
-#define GPIO_PIN_PUMP2           18 /* P1-12 */
-#define GPIO_PIN_VALVE           27 /* P1-13 */
-#define GPIO_PIN_EL_HEATER       22 /* P1-15 */
-#define GPIO_PIN_UPS_POWERED     25 /* P1-22 */
-
 /* Maximum difference allowed for data received from sensors between reads, C */
 #define MAX_TEMP_DIFF        7
 
@@ -151,6 +144,16 @@ struct cfg_struct
     char    tkolektor_sensor[MAXLEN];
     char    tboilerh_sensor[MAXLEN];
     char    tboilerl_sensor[MAXLEN];
+    char    bat_powered_pin_str[MAXLEN];
+    int     bat_powered_pin;
+    char    pump1_pin_str[MAXLEN];
+    int     pump1_pin;
+    char    pump2_pin_str[MAXLEN];
+    int     pump2_pin;
+    char    valve1_pin_str[MAXLEN];
+    int     valve1_pin;
+    char    el_heater_pin_str[MAXLEN];
+    int     el_heater_pin;
     char    mode_str[MAXLEN];
     int     mode;
     char    wanted_T_str[MAXLEN];
@@ -186,6 +189,30 @@ DisableGPIOpins();
 /* end of forward-declared functions */
 
 void
+rangecheck_GPIO_pin( int p )
+{
+    if (p < 4) p = 4;
+    if (p > 27) p = 27;
+}
+
+short
+not_every_GPIO_pin_is_UNIQUE()
+{
+	short result=0;
+	if (cfg.bat_powered_pin == cfg.pump1_pin) result++;
+	if (cfg.bat_powered_pin == cfg.pump2_pin) result++;
+	if (cfg.bat_powered_pin == cfg.valve1_pin) result++;
+	if (cfg.bat_powered_pin == cfg.el_heater_pin) result++;
+	if (cfg.pump1_pin == cfg.pump2_pin) result++;
+	if (cfg.pump1_pin == cfg.valve1_pin) result++;
+	if (cfg.pump1_pin == cfg.el_heater_pin) result++;
+	if (cfg.pump2_pin == cfg.valve1_pin) result++;
+	if (cfg.pump2_pin == cfg.el_heater_pin) result++;
+	if (cfg.valve1_pin == cfg.el_heater_pin) result++;
+	return result;
+}
+
+void
 rangecheck_mode( int m )
 {
     if (m < 0) m = 0;
@@ -215,11 +242,21 @@ rangecheck_day_of_month( int d )
 }
 
 void
+SetDefaultPINs() {
+    cfg.bat_powered_pin = 25;
+    cfg.pump1_pin = 17;
+    cfg.pump2_pin = 18;
+    cfg.valve1_pin = 27;
+    cfg.el_heater_pin = 22;
+}
+
+void
 SetDefaultCfg() {
     strcpy( cfg.tkotel_sensor, "/dev/zero/1");
     strcpy( cfg.tkolektor_sensor, "/dev/zero/2");
     strcpy( cfg.tboilerh_sensor, "/dev/zero/3");
     strcpy( cfg.tboilerl_sensor, "/dev/zero/4");
+    SetDefaultPINs();
     cfg.mode = 1;
     cfg.wanted_T = 40;
     cfg.use_electric_heater_night = 1;
@@ -348,6 +385,16 @@ parse_config()
             strncpy (cfg.tboilerh_sensor, value, MAXLEN);
             else if (strcmp(name, "tboilerl_sensor")==0)
             strncpy (cfg.tboilerl_sensor, value, MAXLEN);
+            else if (strcmp(name, "bat_powered_pin")==0)
+            strncpy (cfg.bat_powered_pin_str, value, MAXLEN);
+            else if (strcmp(name, "pump1_pin")==0)
+            strncpy (cfg.pump1_pin_str, value, MAXLEN);
+            else if (strcmp(name, "pump2_pin")==0)
+            strncpy (cfg.pump2_pin_str, value, MAXLEN);
+            else if (strcmp(name, "valve1_pin")==0)
+            strncpy (cfg.valve1_pin_str, value, MAXLEN);
+            else if (strcmp(name, "el_heater_pin")==0)
+            strncpy (cfg.el_heater_pin_str, value, MAXLEN);
             else if (strcmp(name, "mode")==0)
             strncpy (cfg.mode_str, value, MAXLEN);
             else if (strcmp(name, "wanted_T")==0)
@@ -374,6 +421,31 @@ parse_config()
     }
 
     /* Convert strings to int */
+    strcpy( buff, cfg.bat_powered_pin_str );
+    i = atoi( buff );
+    cfg.bat_powered_pin = i;
+    rangecheck_GPIO_pin( cfg.bat_powered_pin );
+    strcpy( buff, cfg.pump1_pin_str );
+    i = atoi( buff );
+    cfg.pump1_pin = i;
+    rangecheck_GPIO_pin( cfg.pump1_pin );
+    strcpy( buff, cfg.pump2_pin_str );
+    i = atoi( buff );
+    cfg.pump2_pin = i;
+    rangecheck_GPIO_pin( cfg.pump2_pin );
+    strcpy( buff, cfg.valve1_pin_str );
+    i = atoi( buff );
+    cfg.valve1_pin = i;
+    rangecheck_GPIO_pin( cfg.valve1_pin );
+    strcpy( buff, cfg.el_heater_pin_str );
+    i = atoi( buff );
+    cfg.el_heater_pin = i;
+    rangecheck_GPIO_pin( cfg.el_heater_pin );
+	if (not_every_GPIO_pin_is_UNIQUE()) {
+		log_message(LOG_FILE,"ALERT: Check config - found same GPIO pin assigned twice! Using default GPIO pins config...");
+		SetDefaultPINs();
+	}
+	
     strcpy( buff, cfg.mode_str );
     i = atoi( buff );
     cfg.mode = i;
@@ -423,6 +495,12 @@ parse_config()
     sprintf( buff, "boiler high temp sensor file: %s", cfg.tboilerh_sensor );
     log_message(LOG_FILE, buff);
     sprintf( buff, "boiler low temp sensor file: %s", cfg.tboilerl_sensor );
+    log_message(LOG_FILE, buff);
+    /* Prepare log messages with GPIO pins used and write them to log file */
+    sprintf( buff, "Using INPUT GPIO pins (BCM mode) as follows: battery powered: %d", cfg.bat_powered_pin );
+    log_message(LOG_FILE, buff);
+    sprintf( buff, "Using OUTPUT GPIO pins (BCM mode) as follows: furnace pump: %d, ETC pump: %d, boiler valve: %d, "\
+	"electrical heater: %d, ", cfg.pump1_pin, cfg.pump2_pin, cfg.valve1_pin, cfg.el_heater_pin );
     log_message(LOG_FILE, buff);
     /* Prepare log message part 1 and write it to log file */
     if (fp == NULL) {
@@ -767,35 +845,35 @@ daemonize()
 short
 EnableGPIOpins()
 {
-    if (-1 == GPIOExport(GPIO_PIN_PUMP1)) return 0;
-    if (-1 == GPIOExport(GPIO_PIN_PUMP2)) return 0;
-    if (-1 == GPIOExport(GPIO_PIN_VALVE)) return 0;
-    if (-1 == GPIOExport(GPIO_PIN_EL_HEATER))  return 0;
-    if (-1 == GPIOExport(GPIO_PIN_UPS_POWERED)) return 0;
+    if (-1 == GPIOExport(cfg.pump1_pin)) return 0;
+    if (-1 == GPIOExport(cfg.pump2_pin)) return 0;
+    if (-1 == GPIOExport(cfg.valve1_pin)) return 0;
+    if (-1 == GPIOExport(cfg.el_heater_pin))  return 0;
+    if (-1 == GPIOExport(cfg.bat_powered_pin)) return 0;
     return -1;
 }
 
 short
 SetGPIODirection()
 {
-    /* output pins */
-    if (-1 == GPIODirection(GPIO_PIN_PUMP1, OUT)) return 0;
-    if (-1 == GPIODirection(GPIO_PIN_PUMP2, OUT)) return 0;
-    if (-1 == GPIODirection(GPIO_PIN_VALVE, OUT)) return 0;
-    if (-1 == GPIODirection(GPIO_PIN_EL_HEATER, OUT))  return 0;
     /* input pins */
-    if (-1 == GPIODirection(GPIO_PIN_UPS_POWERED, IN))  return 0;
+    if (-1 == GPIODirection(cfg.bat_powered_pin, IN))  return 0;
+    /* output pins */
+    if (-1 == GPIODirection(cfg.pump1_pin, OUT)) return 0;
+    if (-1 == GPIODirection(cfg.pump2_pin, OUT)) return 0;
+    if (-1 == GPIODirection(cfg.valve1_pin, OUT)) return 0;
+    if (-1 == GPIODirection(cfg.el_heater_pin, OUT))  return 0;
     return -1;
 }
 
 short
 DisableGPIOpins()
 {
-    if (-1 == GPIOUnexport(GPIO_PIN_PUMP1)) return 0;
-    if (-1 == GPIOUnexport(GPIO_PIN_PUMP2)) return 0;
-    if (-1 == GPIOUnexport(GPIO_PIN_VALVE)) return 0;
-    if (-1 == GPIOUnexport(GPIO_PIN_EL_HEATER))  return 0;
-    if (-1 == GPIOUnexport(GPIO_PIN_UPS_POWERED)) return 0;
+    if (-1 == GPIOUnexport(cfg.pump1_pin)) return 0;
+    if (-1 == GPIOUnexport(cfg.pump2_pin)) return 0;
+    if (-1 == GPIOUnexport(cfg.valve1_pin)) return 0;
+    if (-1 == GPIOUnexport(cfg.el_heater_pin))  return 0;
+    if (-1 == GPIOUnexport(cfg.bat_powered_pin)) return 0;
     return -1;
 }
 
@@ -856,22 +934,22 @@ ReadSensors() {
     }
 }
 
-/* Read GPIO_PIN_UPS_POWERED into CPowerByBattery (see top of file)
-which should be 1 if the external power is generated by UPS */
+/* Read cfg.bat_powered_pin into CPowerByBattery which should be 
+set to 1 if the external power is generated by UPS */
 void
 ReadExternalPower() {
     CPowerByBatteryPrev = CPowerByBattery;
-    CPowerByBattery = GPIORead(GPIO_PIN_UPS_POWERED);
+    CPowerByBattery = GPIORead(cfg.bat_powered_pin);
 }
 
-/* Function to make GPIO state equal to controls[] (see top of file) */
+/* Function to make GPIO state represent what is in controls[] */
 void
 ControlStateToGPIO() {
     /* put state on GPIO pins */
-    GPIOWrite( GPIO_PIN_PUMP1, CPump1 );
-    GPIOWrite( GPIO_PIN_PUMP2, CPump2 );
-    GPIOWrite( GPIO_PIN_VALVE, CValve );
-    GPIOWrite( GPIO_PIN_EL_HEATER,  CHeater );
+    GPIOWrite( cfg.pump1_pin, CPump1 );
+    GPIOWrite( cfg.pump2_pin, CPump2 );
+    GPIOWrite( cfg.valve1_pin, CValve );
+    GPIOWrite( cfg.el_heater_pin,  CHeater );
 }
 
 void
