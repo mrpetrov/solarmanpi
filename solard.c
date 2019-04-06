@@ -1380,6 +1380,16 @@ main(int argc, char *argv[])
 
     daemonize();
 
+    write_log_start();
+
+    just_started = 1;
+    TotalPowerUsed = 0;
+    NightlyPowerUsed = 0;
+
+    parse_config();
+
+    ReadPersistentPower();
+
     /* Enable GPIO pins */
     if ( ! EnableGPIOpins() ) {
         log_message(LOG_FILE,"ALARM: Cannot enable GPIO! Aborting run.");
@@ -1391,16 +1401,6 @@ main(int argc, char *argv[])
         log_message(LOG_FILE,"ALARM: Cannot set GPIO direction! Aborting run.");
         exit(12);
     }
-
-    write_log_start();
-
-    parse_config();
-
-    just_started = 1;
-    TotalPowerUsed = 0;
-    NightlyPowerUsed = 0;
-
-    ReadPersistentPower();
 
     do {
         /* Do all the important stuff... */
