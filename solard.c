@@ -403,7 +403,7 @@ parse_config()
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, cfg.day_to_reset_Pcounters_str );
     i = atoi( buff );
-    if ( i ) cfg.day_to_reset_Pcounters = i;
+    cfg.day_to_reset_Pcounters = i;
     rangecheck_day_of_month( cfg.day_to_reset_Pcounters );
     strcpy( buff, cfg.night_boost_str );
     i = atoi( buff );
