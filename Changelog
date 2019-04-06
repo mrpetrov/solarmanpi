@@ -1,3 +1,95 @@
+4.2 2019-04-06
+solard is now 3+ years in use!
+Yay again!
+A whole year has past since 4.1, and in 2018 it mostly quiet - solard only learned
+outputting data for sending to data collection servers like mqtt/emoncms, and ran
+problem free.
+Then came 2019, and development started again: first freeze protection were updated
+so that furnace pump will only run if it is really necessary, various code cleanups and
+general program improvements (some calculations were done needlessly every cycle
+even though the result could not be different), and ETC critical temps are handled
+much better now - instead of letting ETC boil its water away - solard will act like in
+emergency cooling mode, only without the alarms.
+This was when things started rolling.
+Next the build script got beautiful - it has colored output now, and solard itself switched
+to git for versioning, meaning if you are not on a named realese - you know on which
+exact commit you are.
+Then the supplied config file got updated, because the sensor paths got configurable -
+up until this point they were hardcoded in solard.c. And GPIO pins followed suit.
+The result is that in practice solard is now much more configurable and able to adapt
+to suit various field needs.
+The plan is to make it the controlling part of two piece system including a heat pump,
+but maybe solard will get forked for that...
+
+Shortlog changes since 4.1
+    Update Changelog
+    Update supplied solard.cfg
+    Fix/improve lots of messages
+    Fix init sequence so correct GPIO pins are initialized AND used
+    Make GPIO pins used by solard configurable
+    Move abs_max check where it belongs
+    Remove useless check in parse_config()
+    No need to assign data to cfg.____str vars
+    Sensor files log messages adjustment
+    Total sensor read failures handling adjustment
+    Some vars reorder, config file notes
+    example config usefull note
+    Make sensor paths configurable
+    Adjust exit codes
+    Update used GPIO pins definitions
+    Separate current and previous sensor readings
+    Make sensor_read_errors array more like all the other sensors arrays
+    Update file heading comment
+    Adjust abs_max default value
+    Separate example config in its own file
+    One more build.sh improvement
+    Color enter - color exit fix
+    Last touches to build script
+    Beautify build script
+    Fix git versioning for good
+    Fully switch to "git" versioning
+    Fix "git describe" use as solard version
+    Include "git version" in solard version string
+    Typo fix
+    Adjust ETC heat collect activation point
+    Eliminate ETC critical temps
+    Move some code around
+    Squeeze out even the last drops of heat from ETC
+    Fix freeze protection false activation
+    Make ETC protection more precise
+    Fix antifreeze check
+    No need to recalc max night boost temp every cycle
+    Update 4.2-rc1 date
+    Further reduce hot tap water temp keeping
+    Generalize winter antifreeze protections
+    Get rid of summer house cooling
+    Change furnace pump always-on temp to 38C
+    Be less agressive in temp keeping
+    Replace 57 spaces with 1
+    Make solard write new JSON state file
+    Further improve winter freezing protections
+    Start 4.2 dev cycle
+    Merge pull request #15 from mrpetrov/master
+
+4.1 2018-01-28
+solard is now 2 years in use!
+Yay!
+With a newborn this last year - solard learned to keep water warm aggressively,
+and most recently - real measured data showed that anti-freeze protections
+needed to be much better.
+
+Shortlog changes since 4.0
+    Version 4.1
+    Merge pull request #14 from mrpetrov/dev
+    Properly prevent pipes from freezing
+    Update version string date
+    Update idle furnace heating logic again
+    Try a new version of furnace idle heating
+    Update valve open time in SelectIdle()
+    Closely track wanted temps when it makes sense
+    Be agressive in keeping big boilers warm
+    Start 4.1 dev cycle
+
 4.0 2017-01-29
 This development cycle saw the electric heater start and stop hours settings
 go in favor of a more simple solution: 2 new settings that control the electric
