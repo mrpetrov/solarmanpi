@@ -425,6 +425,15 @@ parse_config()
     cfg.abs_max = i;
     rangecheck_abs_max_temp( cfg.abs_max );
 
+    /* Prepare log messages with sensor paths and write them to log file */
+    sprintf( buff, "furnace temp sensor file: %s", cfg.tkotel_sensor );
+    log_message(LOG_FILE, buff);
+    sprintf( buff, "solar collector temp sensor file: %s", cfg.tkolektor_sensor );
+    log_message(LOG_FILE, buff);
+    sprintf( buff, "boiler high temp sensor file: %s", cfg.tboilerh_sensor );
+    log_message(LOG_FILE, buff);
+    sprintf( buff, "boiler low temp sensor file: %s", cfg.tboilerl_sensor );
+    log_message(LOG_FILE, buff);
     /* Prepare log message part 1 and write it to log file */
     if (fp == NULL) {
         sprintf( buff, "INFO: Using values: Mode=%d, wanted temp=%d, el. heater: night=%d, day=%d,",\
@@ -439,24 +448,11 @@ parse_config()
     "night boiler boost=%d, absMAX=%d", cfg.pump1_always_on, cfg.use_pump1, cfg.use_pump2,\
     cfg.day_to_reset_Pcounters, cfg.night_boost, cfg.abs_max );
     log_message(LOG_FILE, buff);
-    /* Prepare log messages with sensor paths and write them to log file */
-    sprintf( buff, "INFO: furnace temp sensor file=%s", cfg.tkotel_sensor );
-    log_message(LOG_FILE, buff);
-    sprintf( buff, "INFO: ETC temp sensor file=%s", cfg.tkolektor_sensor );
-    log_message(LOG_FILE, buff);
-    sprintf( buff, "INFO: boiler temps sensor files: high=%s", cfg.tboilerh_sensor );
-    log_message(LOG_FILE, buff);
-    sprintf( buff, "INFO: boiler temps sensor files: low=%s", cfg.tboilerl_sensor );
-    log_message(LOG_FILE, buff);
 	
     /* stuff for after parsing config file: */
     /* calculate maximum possible temp for use in night_boost case */
     nightEnergyTemp = ((float)cfg.wanted_T + 12);
     if (nightEnergyTemp > (float)cfg.abs_max) { nightEnergyTemp = (float)cfg.abs_max; }
-/*	sensor_paths[1] = (char *) &cfg.tkotel_sensor;
-	sensor_paths[2] = (char *) &cfg.tkolektor_sensor;
-	sensor_paths[3] = (char *) &cfg.tboilerh_sensor;
-	sensor_paths[4] = (char *) &cfg.tboilerl_sensor; */
 }
 
 void
