@@ -219,25 +219,15 @@ SetDefaultCfg() {
     strcpy( cfg.tkolektor_sensor, "/dev/zero/2");
     strcpy( cfg.tboilerh_sensor, "/dev/zero/3");
     strcpy( cfg.tboilerl_sensor, "/dev/zero/4");
-    strcpy( cfg.mode_str, "1");
     cfg.mode = 1;
-    strcpy( cfg.wanted_T_str, "40");
     cfg.wanted_T = 40;
-    strcpy( cfg.use_electric_heater_night_str, "1");
     cfg.use_electric_heater_night = 1;
-    strcpy( cfg.use_electric_heater_day_str, "1");
     cfg.use_electric_heater_day = 1;
-    strcpy( cfg.pump1_always_on_str, "0");
     cfg.pump1_always_on = 0;
-    strcpy( cfg.use_pump1_str, "1");
     cfg.use_pump1 = 1;
-    strcpy( cfg.use_pump2_str, "1");
     cfg.use_pump2 = 1;
-    strcpy( cfg.day_to_reset_Pcounters_str, "4");
     cfg.day_to_reset_Pcounters = 4;
-    strcpy( cfg.night_boost_str, "0");
     cfg.night_boost = 0;
-    strcpy( cfg.abs_max_str, "47");
     cfg.abs_max = 47;
 
     nightEnergyTemp = 0;
