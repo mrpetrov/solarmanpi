@@ -204,6 +204,7 @@ rangecheck_abs_max_temp( int t )
 {
     if (t < 30) t = 30;
     if (t > 65) t = 65;
+    if (t < (cfg.wanted_T+3)) { t = cfg.wanted_T+3; }
 }
 
 void
@@ -411,7 +412,6 @@ parse_config()
     /* ^ no need for range check - 0 is OFF, non-zero is ON */
     strcpy( buff, cfg.abs_max_str );
     i = atoi( buff );
-    if (i < (cfg.wanted_T+3)) { i = cfg.wanted_T+3; }
     cfg.abs_max = i;
     rangecheck_abs_max_temp( cfg.abs_max );
 
