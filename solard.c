@@ -18,8 +18,8 @@
 * of notable events, recorded by the daemon.
 */
 
-#ifndef SOLARDVERSION
-#error Need to define SOLARDVERSION in order to compile me!
+#ifndef PGMVER
+#error Need to define PGMVER in order to compile me!
 #endif
 
 #include <sys/stat.h>
@@ -961,7 +961,7 @@ void
 write_log_start() {
     char start_log_text[80];
 
-    log_message(LOG_FILE,"INFO: solard "SOLARDVERSION" now starting up...");
+    log_message(LOG_FILE,"INFO: solard "PGMVER" now starting up...");
     log_message(LOG_FILE,"Running in "RUNNING_DIR", config file "CONFIG_FILE );
     log_message(LOG_FILE,"PID written to "LOCK_FILE", writing CSV data to "DATA_FILE );
     log_message(LOG_FILE,"Writing table data for collectd to "TABLE_FILE );

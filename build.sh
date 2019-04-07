@@ -16,7 +16,7 @@ then
     rm solard
 	echo "$(tput setaf 3)Previous compile result was still present. It is now removed.$(tput sgr 0)"
 fi
-if ! gcc -D_FORTIFY_SOURCE=2 -DSOLARDVERSION=\"$SGV\" -Wall -Wno-unused-result -O3 -o solard solard.c; then
+if ! gcc -D_FORTIFY_SOURCE=2 -DPGMVER=\"$SGV\" -Wall -Wno-unused-result -O3 -o solard solard.c; then
 	echo "$(tput setaf 1)$(tput setab 7)ERROR: Compilation failed!$(tput sgr 0)"
 else
 	echo "$(tput setaf 2)$(tput smso)Successfully$(tput rmso) compiled solard version $(tput smso)$SGV$(tput rmso) at: $(tput smso)`date`$(tput sgr 0)"
