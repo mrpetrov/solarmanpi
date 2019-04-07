@@ -18,6 +18,10 @@
 * of notable events, recorded by the daemon.
 */
 
+#ifndef SOLARDVERSION
+#error Need to define SOLARDVERSION in order to compile me!
+#endif
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
