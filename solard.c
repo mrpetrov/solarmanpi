@@ -226,7 +226,7 @@ rangecheck_mode( int m )
 void
 rangecheck_wanted_temp( int temp )
 {
-    if (temp < 10) temp = 10;
+    if (temp < 22) temp = 22;
     if (temp > 50) temp = 50;
 }
 
@@ -457,7 +457,7 @@ parse_config()
     rangecheck_mode( cfg.mode );
     strcpy( buff, cfg.wanted_T_str );
     i = atoi( buff );
-    if ( i ) cfg.wanted_T = i;
+    cfg.wanted_T = i;
     rangecheck_wanted_temp( cfg.wanted_T );
     strcpy( buff, cfg.use_electric_heater_night_str );
     i = atoi( buff );
