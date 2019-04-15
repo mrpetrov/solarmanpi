@@ -1387,7 +1387,7 @@ main(int argc, char *argv[])
 
     write_log_start();
 
-    just_started = 1;
+    just_started = 3;
     TotalPowerUsed = 0;
     NightlyPowerUsed = 0;
 
@@ -1488,7 +1488,7 @@ main(int argc, char *argv[])
         ActivateHeatingMode(HeatingMode);
         LogData(HeatingMode);
         ProgramRunCycles++;
-        if ( just_started ) { just_started = 0; }
+        if ( just_started ) { just_started--; }
         if ( need_to_read_cfg ) {
             need_to_read_cfg = 0;
             just_started = 1;
