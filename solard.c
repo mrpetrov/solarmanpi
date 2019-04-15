@@ -1362,23 +1362,23 @@ main(int argc, char *argv[])
 
     /* before main work starts - try to open the log files to write a new line
     ...and SCREAM if there is trouble! */
-    if (log_message(LOG_FILE,"***\n")) {
+    if (log_message(LOG_FILE,"***")) {
         printf("Cannot open the mandatory "LOG_FILE" file needed for operation!\n");
         exit(3);
     }
-    if (log_message(DATA_FILE,"***\n")) {
+    if (log_message(DATA_FILE,"***")) {
         printf("Cannot open the mandatory "DATA_FILE" file needed for operation!\n");
         exit(4);
     }
-    if (log_message(TABLE_FILE,"***\n")) {
+    if (log_message(TABLE_FILE,"***")) {
         printf("Cannot open the mandatory "TABLE_FILE" file needed for operation!\n");
         exit(5);
     }
-    if (log_message(JSON_FILE,"***\n")) {
+    if (log_message(JSON_FILE,"***")) {
         printf("Cannot open the mandatory "JSON_FILE" file needed for operation!\n");
         exit(6);
     }
-    if (log_message(CFG_TABLE_FILE,"***\n")) {
+    if (log_message(CFG_TABLE_FILE,"***")) {
         printf("Cannot open the mandatory "CFG_TABLE_FILE" file needed for operation!\n");
         exit(7);
     }
