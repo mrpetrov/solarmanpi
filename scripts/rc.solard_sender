@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# rc.solard_sender
+#
+
+log_opts="-p user.warning -t /etc/rc.solard_sender"
+sleep_time="9.8"
+json_file="/run/shm/solard_current_json"
+emoncms_node="4"
+emoncms_server="http://localhost/emoncms/input/post"
+api_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+logger $log_opts "Starting operations"
+while [ true ]
+do
+        /bin/sleep $sleep_time
+        if [ ! -e $json_file ]; then
+            logger $log_opts "Skipping send cycle - $json_file absent..."
+            continue
+        fi
+        /usr/bin/curl --connect-timeout 1 --max-time 2 --retry 2 --retry-delay 0 --silent --data \
+        "$emoncms_node&data=`cat $json_file`&apikey=$api_key" $emoncms_server
+
+        res=$?
+        if [ "$res" != "0" ]; then
+#               dt=$(date '+%Y-%m-%d %H:%M:%S');
+                logger $log_opts "curl failed with code: $res"
+                logger $log_opts "retrying in a while..."
+                /bin/sleep 50
+#       else
+                # no errors - curl succeded at task given
+                #/bin/sleep 0.1
+        fi
+done
+
+#dt=$(date '+%Y-%m-%d %H:%M:%S');
+logger $log_opts "WOW! This should never ever get in the logs..."
+logger $log_opts "WOW! If we somehow reach here - call the GURU MEDIATION experts!"
+exit 0
+
+#EOF
