@@ -158,6 +158,8 @@ struct cfg_struct
     int     valve1_pin;
     char    el_heater_pin_str[MAXLEN];
     int     el_heater_pin;
+    char    invert_output_str[MAXLEN];
+    int     invert_output;
     char    mode_str[MAXLEN];
     int     mode;
     char    wanted_T_str[MAXLEN];
@@ -261,6 +263,7 @@ SetDefaultCfg() {
     strcpy( cfg.tboilerh_sensor, "/dev/zero/3");
     strcpy( cfg.tboilerl_sensor, "/dev/zero/4");
     SetDefaultPINs();
+    cfg.invert_output = 1;
     cfg.mode = 1;
     cfg.wanted_T = 40;
     cfg.use_electric_heater_night = 1;
@@ -399,6 +402,8 @@ parse_config()
             strncpy (cfg.valve1_pin_str, value, MAXLEN);
             else if (strcmp(name, "el_heater_pin")==0)
             strncpy (cfg.el_heater_pin_str, value, MAXLEN);
+            else if (strcmp(name, "invert_output")==0)
+            strncpy (cfg.invert_output_str, value, MAXLEN);
             else if (strcmp(name, "mode")==0)
             strncpy (cfg.mode_str, value, MAXLEN);
             else if (strcmp(name, "wanted_T")==0)
@@ -450,7 +455,11 @@ parse_config()
        log_message(LOG_FILE,"ALERT: The above is an error. Switching to using default GPIO pins config...");
        SetDefaultPINs();
 	}
-	
+    strcpy( buff, cfg.invert_output_str );
+    i = atoi( buff );
+    cfg.invert_output = i;
+    /* ^ no need for range check - 0 is OFF, non-zero is ON */
+
     strcpy( buff, cfg.mode_str );
     i = atoi( buff );
     cfg.mode = i;
@@ -507,6 +516,14 @@ parse_config()
     sprintf( buff, "Using OUTPUT GPIO pins (BCM mode) as follows: furnace pump: %d, ETC pump: %d, boiler valve: %d, "\
 	"electrical heater: %d ", cfg.pump1_pin, cfg.pump2_pin, cfg.valve1_pin, cfg.el_heater_pin );
     log_message(LOG_FILE, buff);
+    if (cfg.invert_output) {
+        sprintf( buff, "OUTPUT GPIO pins controlling is INVERTED - ON is LOW (0)" );
+        log_message(LOG_FILE, buff);
+    }
+    else {
+        sprintf( buff, "OUTPUT GPIO pins controlling is STRAIGHT - ON is HIGH (1)" );
+        log_message(LOG_FILE, buff);
+    }
     /* Prepare log message part 1 and write it to log file */
     if (fp == NULL) {
         sprintf( buff, "INFO: Using values: Mode=%d, wanted temp=%d, el. heater: night=%d, day=%d,",\
@@ -951,10 +968,18 @@ ReadExternalPower() {
 void
 ControlStateToGPIO() {
     /* put state on GPIO pins */
-    GPIOWrite( cfg.pump1_pin, CPump1 );
-    GPIOWrite( cfg.pump2_pin, CPump2 );
-    GPIOWrite( cfg.valve1_pin, CValve );
-    GPIOWrite( cfg.el_heater_pin,  CHeater );
+    if (cfg.invert_output) {
+            GPIOWrite( cfg.pump1_pin, !CPump1 );
+            GPIOWrite( cfg.pump2_pin, !CPump2 );
+            GPIOWrite( cfg.valve1_pin, !CValve );
+            GPIOWrite( cfg.el_heater_pin,  !CHeater );
+        }
+    else {
+            GPIOWrite( cfg.pump1_pin, CPump1 );
+            GPIOWrite( cfg.pump2_pin, CPump2 );
+            GPIOWrite( cfg.valve1_pin, CValve );
+            GPIOWrite( cfg.el_heater_pin,  CHeater );
+        }
 }
 
 void
