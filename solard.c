@@ -228,15 +228,15 @@ rangecheck_mode( int m )
 void
 rangecheck_wanted_temp( int temp )
 {
-    if (temp < 22) temp = 22;
-    if (temp > 50) temp = 50;
+    if (temp < 25) temp = 25;
+    if (temp > 62) temp = 62;
 }
 
 void
 rangecheck_abs_max_temp( int t )
 {
-    if (t < 30) t = 30;
-    if (t > 65) t = 65;
+    if (t < 40) t = 40;
+    if (t > 70) t = 70;
     if (t < (cfg.wanted_T+3)) { t = cfg.wanted_T+3; }
 }
 
@@ -1119,7 +1119,7 @@ LogData(short HM) {
 short
 CriticalTempsFound() {
     if (Tkotel > 68) return 1;
-    if (TboilerHigh > 62) return 2;
+    if (TboilerHigh > 71) return 2;
     return 0;
 }
 
