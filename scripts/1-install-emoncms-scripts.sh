@@ -23,7 +23,7 @@ mv /etc/rc.local /etc/rc.local.bak -f
 cp ./solard_data_sender_starter.sh /etc/rc.local
 if (( $? > 0 ))
 then
-    echo "$(tput setaf 7)$(tput setab 1)ERROR: Could replace /etc/rc.local!$(tput sgr0)"
+    echo "$(tput setaf 7)$(tput setab 1)ERROR: Could NOT replace /etc/rc.local!$(tput sgr0)"
     exit 2
 fi
 chmod +x /etc/rc.local
