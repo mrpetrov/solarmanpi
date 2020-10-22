@@ -1,3 +1,36 @@
+4.3 2020-10-22
+This version is to bring the few changes that stood in the dev branches to master, after
+being tested and real life proven to add no negative effects.
+That is because the heat pump controlling forks are finally happening, so this version
+will act as a cleanup and consolidation before the fork.
+Version 4.3 will probably be the last one supporting RPi plus one of Waveshare's RPi
+Relay Board (B) in a config with 4 DS18B20 sensors (furnace, boiler low, boiler high, 
+evacuated tube solar collector), 2 water pumps (I used Grundfoss UPS2), a thermal 
+wax valve and a high power DIN rail mounted contactor (the ABB ESB 20-11 worked 
+and keeps working well for me). One will need to somehow attach to RPi's OneWire 
+master pin - I used a custom PCB to make the necessary connections for the pull-up 
+resistor.
+For what its worth - my belief it that solard is in such a shape now as to be a really 
+solid base for what's coming next! Even with no further changes - it does its thing 
+really well..
+
+Shortlog changes since 4.2
+      Fix a script error message
+      Add invert_output to example solard.cfg
+      Adjust boundary temps
+      Add and implement invert_output setting
+      During winter - be agressive in keeping boiler hot
+      Create create-service-stretch.txt
+      Add several scrpits necessary to fully exploit solard's potential
+      No need for newlines on startup
+      FIX: Startup behavoir - failure to recover from wrong sensor data
+      Remove another useless check
+      Example config file reshuffle
+      Create update-solard-executable.sh
+      Smarten-up build.sh
+      Shorten SOLARDVERSION to PGMVER
+      Error out during compile if SOLARDVERSION is not defined
+
 4.2 2019-04-06
 solard is now 3+ years in use!
 Yay again!
